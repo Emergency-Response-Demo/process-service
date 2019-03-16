@@ -78,6 +78,7 @@ public class IncidentReportedEventMessageListener {
 
             Map<String, Object> parameters = new HashMap<>();
             parameters.put("incident", incident);
+            // TODO: pass destination list
 
             CorrelationKey correlationKey = correlationKeyFactory.newCorrelationKey(incidentId);
 

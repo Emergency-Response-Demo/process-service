@@ -1,4 +1,4 @@
-package com.redhat.cajun.navyprocess.message.listeners;
+package com.redhat.cajun.navy.process.message.listeners;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -12,7 +12,6 @@ import static org.springframework.test.util.ReflectionTestUtils.setField;
 import java.math.BigDecimal;
 import java.util.Map;
 
-import com.redhat.cajun.navy.process.message.listeners.IncidentReportedEventMessageListener;
 import com.redhat.cajun.navy.rules.model.Incident;
 import org.hamcrest.CoreMatchers;
 import org.jbpm.process.instance.ProcessInstance;
