@@ -1,13 +1,18 @@
 package com.redhat.cajun.navy.process.message.listeners;
 
+import java.math.BigDecimal;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
+import com.redhat.cajun.navy.process.message.model.DestinationLocations;
 import com.redhat.cajun.navy.process.message.model.IncidentReportedEvent;
 import com.redhat.cajun.navy.process.message.model.Message;
+import com.redhat.cajun.navy.rules.model.Destination;
 import com.redhat.cajun.navy.rules.model.Incident;
 import org.jbpm.services.api.ProcessService;
 import org.kie.internal.KieInternalServices;
@@ -47,6 +52,9 @@ public class IncidentReportedEventMessageListener {
     @Value("${incident.process.id}")
     private String processId;
 
+    @Autowired
+    private DestinationLocations destinationLocations;
+
     @KafkaListener(topics = "${listener.destination.incident-reported-event}")
     public void processMessage(@Payload String messageAsJson, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key,
                                @Header(KafkaHeaders.RECEIVED_TOPIC) String topic,
@@ -75,10 +83,17 @@ public class IncidentReportedEventMessageListener {
             incident.setMedicalNeeded(message.getBody().isMedicalNeeded());
             incident.setReportedTime(message.getBody().getTimestamp());
 
+            List<Destination> destinations = destinationLocations.getLocations().stream().map(location -> {
+                Destination destination = new Destination();
+                destination.setName(location.getName());
+                destination.setLatitude(new BigDecimal(location.getLatitude()));
+                destination.setLongitude(new BigDecimal(location.getLongitude()));
+                return destination;
+            }).collect(Collectors.toList());
 
             Map<String, Object> parameters = new HashMap<>();
             parameters.put("incident", incident);
-            // TODO: pass destination list
+            parameters.put("destinations", destinations);
 
             CorrelationKey correlationKey = correlationKeyFactory.newCorrelationKey(incidentId);
 
