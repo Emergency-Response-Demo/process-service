@@ -9,7 +9,7 @@ public class CreateMissionCommandBuilder {
 
     public static KafkaMessageSenderWorkItemHandler.Pair<String, CreateMissionCommand> builder(Map<String, Object> parameters) {
 
-        Object payload = parameters.get("payload");
+        Object payload = parameters.get("Payload");
         if (!(payload instanceof Mission)) {
             throw new IllegalStateException("Parameter 'payload' cannot be null and must be of type com.redhat.cajun.navy.rules.model.Mission");
         }

@@ -86,7 +86,7 @@ public class KafkaMessageSenderWorkItemHandlerTest {
 
         Map<String, Object> parameters = new HashMap<>();
         parameters.put("MessageType", "CreateMissionCommand");
-        parameters.put("payload", mission);
+        parameters.put("Payload", mission);
         when(workItem.getParameters()).thenReturn(parameters);
         when(workItem.getId()).thenReturn(1L);
 
