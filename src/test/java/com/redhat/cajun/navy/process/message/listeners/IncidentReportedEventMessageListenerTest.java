@@ -10,11 +10,11 @@ import static org.mockito.MockitoAnnotations.initMocks;
 import static org.springframework.test.util.ReflectionTestUtils.setField;
 
 import java.math.BigDecimal;
-import java.util.List;
 import java.util.Map;
 
 import com.redhat.cajun.navy.process.message.model.DestinationLocations;
 import com.redhat.cajun.navy.rules.model.Destination;
+import com.redhat.cajun.navy.rules.model.Destinations;
 import com.redhat.cajun.navy.rules.model.Incident;
 import org.hamcrest.CoreMatchers;
 import org.jbpm.process.instance.ProcessInstance;
@@ -100,14 +100,14 @@ public class IncidentReportedEventMessageListenerTest {
         assertThat(incident.getNumPeople(), equalTo(3));
         assertThat(incident.getMedicalNeeded(), equalTo(true));
         assertThat(incident.getReportedTime(), equalTo(1521148332350l));
-        List<Destination> destinations = (List<Destination>) parameters.get("destinations");
+        Destinations destinations = (Destinations) parameters.get("destinations");
         assertThat(destinations, notNullValue());
-        assertThat(destinations.size(), equalTo(2));
-        Destination destination1 = destinations.get(0);
+        assertThat(destinations.getDestinations().size(), equalTo(2));
+        Destination destination1 = destinations.getDestinations().get(0);
         assertThat(destination1.getName(), equalTo("loc1"));
         assertThat(destination1.getLatitude(), equalTo(new BigDecimal("20.12345")));
         assertThat(destination1.getLongitude(), equalTo(new BigDecimal("-50.98765")));
-        Destination destination2 = destinations.get(1);
+        Destination destination2 = destinations.getDestinations().get(1);
         assertThat(destination2.getName(), equalTo("loc2"));
         assertThat(destination2.getLatitude(), equalTo(new BigDecimal("30.12345")));
         assertThat(destination2.getLongitude(), equalTo(new BigDecimal("-60.98765")));

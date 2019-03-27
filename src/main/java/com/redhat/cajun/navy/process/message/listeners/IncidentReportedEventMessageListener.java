@@ -13,6 +13,7 @@ import com.redhat.cajun.navy.process.message.model.DestinationLocations;
 import com.redhat.cajun.navy.process.message.model.IncidentReportedEvent;
 import com.redhat.cajun.navy.process.message.model.Message;
 import com.redhat.cajun.navy.rules.model.Destination;
+import com.redhat.cajun.navy.rules.model.Destinations;
 import com.redhat.cajun.navy.rules.model.Incident;
 import org.jbpm.services.api.ProcessService;
 import org.kie.internal.KieInternalServices;
@@ -83,13 +84,15 @@ public class IncidentReportedEventMessageListener {
             incident.setMedicalNeeded(message.getBody().isMedicalNeeded());
             incident.setReportedTime(message.getBody().getTimestamp());
 
-            List<Destination> destinations = destinationLocations.getLocations().stream().map(location -> {
+            List<Destination> destinationList = destinationLocations.getLocations().stream().map(location -> {
                 Destination destination = new Destination();
                 destination.setName(location.getName());
                 destination.setLatitude(new BigDecimal(location.getLatitude()));
                 destination.setLongitude(new BigDecimal(location.getLongitude()));
                 return destination;
             }).collect(Collectors.toList());
+
+            Destinations destinations = new Destinations(destinationList);
 
             Map<String, Object> parameters = new HashMap<>();
             parameters.put("incident", incident);
