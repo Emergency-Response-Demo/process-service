@@ -1,7 +1,6 @@
 package com.redhat.cajun.navy.process.wih;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,7 +20,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
-@Component("Responders")
+@Component("ResponderService")
 public class GetRespondersRestWorkItemHandler implements WorkItemHandler {
 
     private static Logger log = LoggerFactory.getLogger(GetRespondersRestWorkItemHandler.class);
@@ -40,11 +39,11 @@ public class GetRespondersRestWorkItemHandler implements WorkItemHandler {
     public void executeWorkItem(WorkItem workItem, WorkItemManager manager) {
 
         RestTemplate restTemplate = new RestTemplate();
-        Responders responders = new Responders();
+        Responders responders;
         try {
             ResponseEntity<List<Responder>> entity = restTemplate.exchange(responderServiceScheme + "://" + responderServiceUrl + availableRespondersPath,
                     HttpMethod.GET, null, new ParameterizedTypeReference<List<Responder>>(){});
-            responders.setResponders(entity.getBody().stream().map(r -> {
+            responders = new Responders(entity.getBody().stream().map(r -> {
                 com.redhat.cajun.navy.rules.model.Responder responder = new com.redhat.cajun.navy.rules.model.Responder();
                 responder.setId(Long.toString(r.getId()));
                 responder.setFullname(r.getName());
@@ -58,7 +57,7 @@ public class GetRespondersRestWorkItemHandler implements WorkItemHandler {
 
         } catch (HttpClientErrorException e) {
             log.error("Http Exception when calling responder service - response code : " + e.getRawStatusCode(), e);
-            responders.setResponders(new ArrayList<>());
+            responders = new Responders();
         }
         Map<String, Object> results = new HashMap<>();
         results.put("Responders", responders);
