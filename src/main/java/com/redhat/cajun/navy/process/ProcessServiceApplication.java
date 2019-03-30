@@ -47,12 +47,6 @@ public class ProcessServiceApplication {
             @Value("${incident.deployment.id}")
             private String deploymentId;
 
-            @Value("${incident.process.kbase}")
-            private String kbase;
-
-            @Value("${incident.process.ksession}")
-            private String ksession;
-
             @Autowired
             private DeploymentService deploymentService;
 
@@ -61,8 +55,7 @@ public class ProcessServiceApplication {
 
             @Override
             public void run(String... strings) throws Exception {
-                CustomIdKModuleDeploymentUnit unit = new CustomIdKModuleDeploymentUnit(deploymentId, "com.redhat.cajun.navy", "process-service", "1.0",
-                        kbase, ksession);
+                CustomIdKModuleDeploymentUnit unit = new CustomIdKModuleDeploymentUnit(deploymentId, "com.redhat.cajun.navy", "process-service", "1.0");
 
                 unit.setStrategy(RuntimeStrategy.PER_REQUEST);
 
@@ -73,7 +66,7 @@ public class ProcessServiceApplication {
                 deploymentService.deploy(unit);
 
                 Collection<ProcessDefinition> processes = runtimeDataService.getProcesses(new QueryContext());
-                processes.forEach(p -> log.info(p.toString()));
+                processes.forEach(p -> log.info(p.getName()));
             }
         };
     }

@@ -15,10 +15,10 @@ public class BusinessRuleTaskHandlerWrapper extends AbstractLogOrThrowWorkItemHa
 
     private BusinessRuleTaskHandler businessRuleTaskHandler;
 
-    @Value("${mission.assignment.rules.groupId}")
+    @Value("${mission.assignment.rules.groupid}")
     private String groupId;
 
-    @Value(("${mission.assignment.rules.artifactId}"))
+    @Value(("${mission.assignment.rules.artifactid}"))
     private String artifactId;
 
     @Value("${mission.assignment.rules.version}")

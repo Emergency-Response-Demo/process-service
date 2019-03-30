@@ -13,7 +13,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
@@ -55,7 +55,7 @@ public class GetRespondersRestWorkItemHandlerTest {
     private GetRespondersRestWorkItemHandler wih;
 
     @Before
-    public void beforeTest() throws Exception {
+    public void beforeTest() {
         initMocks(this);
         wih = new GetRespondersRestWorkItemHandler();
         ReflectionTestUtils.setField(wih, "responderServiceScheme", "http", null);
