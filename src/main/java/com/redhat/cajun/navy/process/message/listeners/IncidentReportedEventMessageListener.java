@@ -53,6 +53,9 @@ public class IncidentReportedEventMessageListener {
     @Value("${incident.process.id}")
     private String processId;
 
+    @Value("${incident.process.assignment-delay}")
+    private String assignmentDelay;
+
     @Autowired
     private DestinationLocations destinationLocations;
 
@@ -97,6 +100,7 @@ public class IncidentReportedEventMessageListener {
             Map<String, Object> parameters = new HashMap<>();
             parameters.put("incident", incident);
             parameters.put("destinations", destinations);
+            parameters.put("assignmentDelay", assignmentDelay);
 
             CorrelationKey correlationKey = correlationKeyFactory.newCorrelationKey(incidentId);
 

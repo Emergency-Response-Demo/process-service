@@ -63,6 +63,7 @@ public class IncidentReportedEventMessageListenerTest {
         setField(messageListener, null, processService, ProcessService.class);
         setField(messageListener, "processId", processId, String.class);
         setField(messageListener, "destinationLocations", destinationLocations(), DestinationLocations.class);
+        setField(messageListener, "assignmentDelay", "PT30S", String.class);
         when(ptm.getTransaction(any())).thenReturn(transactionStatus);
         when(processService.startProcess(any(), any(), any(), any())).thenReturn(100L);
 
@@ -90,7 +91,8 @@ public class IncidentReportedEventMessageListenerTest {
         CorrelationKey correlationKey = correlationKeyCaptor.getValue();
         assertThat(correlationKey.getName(), equalTo("incident123"));
         Map<String, Object> parameters = parametersCaptor.getValue();
-        assertThat(parameters.size(), equalTo(2));
+        assertThat(parameters.size(), equalTo(3));
+        assertThat(parameters.get("assignmentDelay"), equalTo("PT30S"));
         assertThat(parameters.get("incident"), notNullValue());
         assertThat(parameters.get("incident") instanceof Incident, CoreMatchers.equalTo(true));
         Incident incident = (Incident) parameters.get("incident");
