@@ -74,7 +74,7 @@ public class ResponderUpdatedEventMessageListenerTest {
 
         messageListener.processMessage(json, "responderId", "test-topic", 1);
 
-        verify(processService).signalProcessInstance(100L, "ResponderAvailableEvent", true);
+        verify(processService).signalProcessInstance(100L, "ResponderAvailable", true);
         verify(processService).getProcessInstance(correlationKeyCaptor.capture());
         CorrelationKey correlationKey = correlationKeyCaptor.getValue();
         assertThat(correlationKey.getName(), equalTo("incident123"));
@@ -104,7 +104,7 @@ public class ResponderUpdatedEventMessageListenerTest {
 
         messageListener.processMessage(json, "responderId", "test-topic", 1);
 
-        verify(processService).signalProcessInstance(100L, "ResponderAvailableEvent", false);
+        verify(processService).signalProcessInstance(100L, "ResponderAvailable", false);
         verify(processService).getProcessInstance(correlationKeyCaptor.capture());
         CorrelationKey correlationKey = correlationKeyCaptor.getValue();
         assertThat(correlationKey.getName(), equalTo("incident123"));

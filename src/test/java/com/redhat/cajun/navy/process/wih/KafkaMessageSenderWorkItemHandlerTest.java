@@ -92,7 +92,7 @@ public class KafkaMessageSenderWorkItemHandlerTest {
         mission.setDestinationLong(new BigDecimal("-90.98765"));
 
         Map<String, Object> parameters = new HashMap<>();
-        parameters.put("MessageType", "CreateMissionCommand");
+        parameters.put("MessageType", "CreateMission");
         parameters.put("Payload", mission);
         when(workItem.getParameters()).thenReturn(parameters);
         when(workItem.getId()).thenReturn(1L);
@@ -132,7 +132,7 @@ public class KafkaMessageSenderWorkItemHandlerTest {
         mission.setDestinationLong(new BigDecimal("-90.98765"));
 
         Map<String, Object> parameters = new HashMap<>();
-        parameters.put("MessageType", "SetResponderUnavailableCommand");
+        parameters.put("MessageType", "SetResponderUnavailable");
         parameters.put("Payload", mission);
         when(workItem.getParameters()).thenReturn(parameters);
         when(workItem.getId()).thenReturn(1L);

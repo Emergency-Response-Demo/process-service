@@ -29,6 +29,8 @@ public class ResponderUpdatedEventMessageListener {
 
     private final static String TYPE_RESPONDER_UPDATED_EVENT = "ResponderUpdatedEvent";
 
+    private static final String SIGNAL_RESPONDER_AVAILABLE = "ResponderAvailable";
+
     @Autowired
     private ProcessService processService;
 
@@ -87,7 +89,7 @@ public class ResponderUpdatedEventMessageListener {
                     log.warn("Process instance with correlationKey '" + incidentId + "' not found.");
                     return null;
                 }
-                processService.signalProcessInstance(instance.getId(), "ResponderAvailableEvent", available);
+                processService.signalProcessInstance(instance.getId(), SIGNAL_RESPONDER_AVAILABLE, available);
                 return null;
             });
 

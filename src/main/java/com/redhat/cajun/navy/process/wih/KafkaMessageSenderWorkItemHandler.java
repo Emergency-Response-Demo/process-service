@@ -59,7 +59,7 @@ public class KafkaMessageSenderWorkItemHandler implements WorkItemHandler {
     private void send(String destination, String key, Message<?> msg) {
         ListenableFuture<SendResult<String, Message<?>>> future = kafkaTemplate.send(destination, key, msg);
         future.addCallback(
-                result -> log.debug("Sent '" + msg.getMessageType() + "' message witk key " + key),
+                result -> log.debug("Sent '" + msg.getMessageType() + "' message with key " + key),
                 ex -> log.error("Error sending '" + msg.getMessageType() + "' message with key " + key, ex));
     }
 
@@ -70,8 +70,8 @@ public class KafkaMessageSenderWorkItemHandler implements WorkItemHandler {
 
     @PostConstruct
     public void init() {
-        addPayloadBuilder("CreateMissionCommand", "CreateMissionCommand", createMissionCommandDestination, CreateMissionCommandBuilder::builder);
-        addPayloadBuilder("SetResponderUnavailableCommand", "UpdateResponderCommand", updateResponderCommandDestination, SetResponderUnavailableCommandBuilder::builder);
+        addPayloadBuilder("CreateMission", "CreateMissionCommand", createMissionCommandDestination, CreateMissionCommandBuilder::builder);
+        addPayloadBuilder("SetResponderUnavailable", "UpdateResponderCommand", updateResponderCommandDestination, SetResponderUnavailableCommandBuilder::builder);
     }
 
     void addPayloadBuilder(String payloadType, String messageType, String destination, BiFunction<String, Map<String, Object>, Pair<String, Message<?>>> builder) {
