@@ -82,10 +82,10 @@ public class KafkaMessageSenderWorkItemHandlerTest {
     public void testCreateMissionCommandMessageType() {
 
         Mission mission = new Mission();
-        mission.setIncidentId("incidentId");
+        mission.setIncidentId("incident123");
         mission.setIncidentLat(new BigDecimal("30.12345"));
         mission.setIncidentLong(new BigDecimal("-70.98765"));
-        mission.setResponderId("responderId");
+        mission.setResponderId("responder123");
         mission.setResponderStartLat(new BigDecimal("40.12345"));
         mission.setResponderStartLong(new BigDecimal("-80.98765"));
         mission.setDestinationLat(new BigDecimal("50.12345"));
@@ -101,17 +101,17 @@ public class KafkaMessageSenderWorkItemHandlerTest {
 
         wih.executeWorkItem(workItem, workItemManager);
         verify(workItemManager).completeWorkItem(eq(1L), anyMap());
-        verify(kafkaTemplate).send(eq("topic-mission-command"), eq("incidentId"), messageCaptor.capture());
+        verify(kafkaTemplate).send(eq("topic-mission-command"), eq("incident123"), messageCaptor.capture());
 
         Message<CreateMissionCommand> message = (Message<CreateMissionCommand>) messageCaptor.getValue();
         assertThat(message.getMessageType(), equalTo("CreateMissionCommand"));
-        assertThat(message.getInvokingService(), equalTo("ProcessService"));
+        assertThat(message.getInvokingService(), equalTo("IncidentProcessService"));
         assertThat(message.getBody(), notNullValue());
         CreateMissionCommand cmd = message.getBody();
-        assertThat(cmd.getIncidentId(), equalTo("incidentId"));
+        assertThat(cmd.getIncidentId(), equalTo("incident123"));
         assertThat(cmd.getIncidentLat(), equalTo("30.12345"));
         assertThat(cmd.getIncidentLong(), equalTo("-70.98765"));
-        assertThat(cmd.getResponderId(), equalTo("responderId"));
+        assertThat(cmd.getResponderId(), equalTo("responder123"));
         assertThat(cmd.getResponderStartLat(), equalTo("40.12345"));
         assertThat(cmd.getResponderStartLong(), equalTo("-80.98765"));
         assertThat(cmd.getDestinationLat(), equalTo("50.12345"));
@@ -122,10 +122,10 @@ public class KafkaMessageSenderWorkItemHandlerTest {
     @SuppressWarnings("unchecked")
     public void testSetResponderUnavailableMessageType() {
         Mission mission = new Mission();
-        mission.setIncidentId("incidentId");
+        mission.setIncidentId("incident123");
         mission.setIncidentLat(new BigDecimal("30.12345"));
         mission.setIncidentLong(new BigDecimal("-70.98765"));
-        mission.setResponderId("responderId");
+        mission.setResponderId("responder123");
         mission.setResponderStartLat(new BigDecimal("40.12345"));
         mission.setResponderStartLong(new BigDecimal("-80.98765"));
         mission.setDestinationLat(new BigDecimal("50.12345"));
@@ -141,17 +141,18 @@ public class KafkaMessageSenderWorkItemHandlerTest {
 
         wih.executeWorkItem(workItem, workItemManager);
         verify(workItemManager).completeWorkItem(eq(1L), anyMap());
-        verify(kafkaTemplate).send(eq("topic-responder-command"), eq("responderId"), messageCaptor.capture());
+        verify(kafkaTemplate).send(eq("topic-responder-command"), eq("responder123"), messageCaptor.capture());
 
         Message<UpdateResponderCommand> message = (Message<UpdateResponderCommand>) messageCaptor.getValue();
         assertThat(message.getMessageType(), equalTo("UpdateResponderCommand"));
-        assertThat(message.getInvokingService(), equalTo("ProcessService"));
+        assertThat(message.getInvokingService(), equalTo("IncidentProcessService"));
+        assertThat(message.getHeaderValue("incidentId"), equalTo("incident123"));
         assertThat(message.getBody(), notNullValue());
         UpdateResponderCommand command = message.getBody();
         assertThat(command, notNullValue());
         Responder responder = command.getResponder();
         assertThat(responder, notNullValue());
-        assertThat(responder.getId(), equalTo("responderId"));
+        assertThat(responder.getId(), equalTo("responder123"));
         assertThat(responder.isAvailable(), equalTo(false));
         assertThat(responder.getName(), nullValue());
         assertThat(responder.getPhoneNumber(), nullValue());
@@ -164,9 +165,10 @@ public class KafkaMessageSenderWorkItemHandlerTest {
     @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
     public static class TestMessageEvent {
 
-        static Pair<String, TestMessageEvent> build(Map<String, Object> parameters) {
+        static Pair<String, Message<?>> build(String messageType, Map<String, Object> parameters) {
             TestMessageEvent event = new TestMessageEvent();
-            return new ImmutablePair<>("testKey", event);
+            Message<TestMessageEvent> message = new Message.Builder<>(messageType, "testservice", event).build();
+            return new ImmutablePair<>("testKey", message);
         }
 
     }

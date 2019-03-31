@@ -3,7 +3,7 @@ package com.redhat.cajun.navy.process.wih;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 import javax.annotation.PostConstruct;
 
 import com.redhat.cajun.navy.process.message.model.Message;
@@ -36,7 +36,7 @@ public class KafkaMessageSenderWorkItemHandler implements WorkItemHandler {
     @Value("${sender.destination.update-responder-command}")
     private String updateResponderCommandDestination;
 
-    private Map<String, Triple<String, String, Function<Map<String, Object>, ?>>> payloadBuilders = new HashMap<>();
+    private Map<String, Triple<String, String, BiFunction<String, Map<String, Object>, Pair<String, Message<?>>>>> payloadBuilders = new HashMap<>();
 
     @Override
     @SuppressWarnings("unchecked")
@@ -46,14 +46,13 @@ public class KafkaMessageSenderWorkItemHandler implements WorkItemHandler {
         if (!(messageType instanceof String)) {
             throw new IllegalStateException("Parameter 'messageType' cannot be null and must be of type String");
         }
-        Triple<String, String, Function<Map<String, Object>, ?>> messagetypeDestinationBuilderTuple = payloadBuilders.get(messageType);
+        Triple<String, String, BiFunction<String, Map<String, Object>, Pair<String, Message<?>>>> messagetypeDestinationBuilderTuple = payloadBuilders.get(messageType);
         if (messagetypeDestinationBuilderTuple == null) {
             throw new IllegalStateException("No builder found for payload'" + messageType + "'");
         }
-        Pair<String, ?> keyAndPayloadPair = (Pair<String, ?>) messagetypeDestinationBuilderTuple.getRight().apply(parameters);
-        Message<Object> message  = new Message.Builder<Object>(messagetypeDestinationBuilderTuple.getLeft(), "ProcessService",
-                keyAndPayloadPair.getRight()).build();
-        send(messagetypeDestinationBuilderTuple.getMiddle(), keyAndPayloadPair.getLeft(), message);
+        Pair<String, Message<?>> keyAndMessagePair = messagetypeDestinationBuilderTuple.getRight().apply(messagetypeDestinationBuilderTuple.getLeft(), parameters);
+
+        send(messagetypeDestinationBuilderTuple.getMiddle(), keyAndMessagePair.getLeft(), keyAndMessagePair.getRight());
         manager.completeWorkItem(workItem.getId(), Collections.emptyMap());
     }
 
@@ -75,7 +74,7 @@ public class KafkaMessageSenderWorkItemHandler implements WorkItemHandler {
         addPayloadBuilder("SetResponderUnavailableCommand", "UpdateResponderCommand", updateResponderCommandDestination, SetResponderUnavailableCommandBuilder::builder);
     }
 
-    void addPayloadBuilder(String payloadType, String messageType, String destination, Function<Map<String, Object>, ?> builder) {
+    void addPayloadBuilder(String payloadType, String messageType, String destination, BiFunction<String, Map<String, Object>, Pair<String, Message<?>>> builder) {
         payloadBuilders.put(payloadType, new ImmutableTriple<>(messageType, destination, builder));
     }
 }
