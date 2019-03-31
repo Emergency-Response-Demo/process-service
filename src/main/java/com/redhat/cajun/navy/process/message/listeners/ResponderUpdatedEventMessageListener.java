@@ -65,7 +65,24 @@ public class ResponderUpdatedEventMessageListener {
 
             TransactionTemplate template = new TransactionTemplate(transactionManager);
             template.execute((TransactionStatus s) -> {
-                ProcessInstance instance = processService.getProcessInstance(correlationKey);
+                int count = 1;
+                ProcessInstance instance = null;
+                // it seems that sometimes the process instance has not been updated in the database when calling getProcessInstance().
+                // dirty hack: if the process instance cannot be found, pause the thread for 300 ms and retry. Bail out after 3 times.
+                while (count <= 3) {
+                    instance = processService.getProcessInstance(correlationKey);
+                    if (instance == null) {
+                        log.warn("Try " + count + " - Process instance with correlationKey '" + incidentId + "' not found.");
+                        try {
+                            Thread.sleep(300);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                        count++;
+                    } else {
+                        break;
+                    }
+                }
                 if (instance == null) {
                     log.warn("Process instance with correlationKey '" + incidentId + "' not found.");
                     return null;

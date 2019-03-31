@@ -4,6 +4,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
@@ -160,9 +161,7 @@ public class ResponderUpdatedEventMessageListenerTest {
         messageListener.processMessage(json, "responderId", "test-topic", 1);
 
         verify(processService, never()).signalProcessInstance(any(), any(), any());
-        verify(processService).getProcessInstance(correlationKeyCaptor.capture());
-        CorrelationKey correlationKey = correlationKeyCaptor.getValue();
-        assertThat(correlationKey.getName(), equalTo("incident123"));
+        verify(processService, times(3)).getProcessInstance(any(CorrelationKey.class));
     }
 
     @Test
