@@ -50,7 +50,7 @@ public class MissionEventTopicListenerTest {
     }
 
     @Test
-    public void testProcessMessage() {
+    public void testProcessMissionStartedEventMessage() {
 
         String json = "{" + "\"messageType\" : \"MissionStartedEvent\"," +
                 "\"id\":\"messageId\"," +
@@ -79,7 +79,7 @@ public class MissionEventTopicListenerTest {
     }
 
     @Test
-    public void testProcessMessageWhenNotFound() {
+    public void testProcessMissionStartedEventMessageWhenNotFound() {
 
         String json = "{" + "\"messageType\" : \"MissionStartedEvent\"," +
                 "\"id\":\"messageId\"," +
@@ -108,9 +108,167 @@ public class MissionEventTopicListenerTest {
     }
 
     @Test
-    public void testProcessMessageWhenNoIncidentId() {
+    public void testProcessMissionStartedEventMessageWhenNoIncidentId() {
 
         String json = "{" + "\"messageType\" : \"MissionStartedEvent\"," +
+                "\"id\":\"messageId\"," +
+                "\"invokingService\":\"messageSender\"," +
+                "\"timestamp\":1521148332397," +
+                "\"body\" : {" +
+                "\"missionId\" : \"mission123\"," +
+                "\"responderId\" : \"responder123\"," +
+                "\"responderStartLat\" : \"30.12345\"," +
+                "\"responderStartLong\" : \"-77.98765\"," +
+                "\"incidentLat\" : \"31.12345\"," +
+                "\"incidentLong\" : \"-78.98765\"," +
+                "\"destinationLat\" : \"32.12345\"," +
+                "\"destinationLong\" : \"-79.98765\"" +
+                "}" + "}";
+
+        messageListener.processMessage(json);
+
+        verify(processService, never()).getProcessInstance(any(CorrelationKey.class));
+        verify(processService, never()).signalProcessInstance(any(), any(), any());
+    }
+
+    @Test
+    public void testProcessVictimPickedUpEventMessage() {
+
+        String json = "{" + "\"messageType\" : \"VictimPickedUpEvent\"," +
+                "\"id\":\"messageId\"," +
+                "\"invokingService\":\"messageSender\"," +
+                "\"timestamp\":1521148332397," +
+                "\"body\" : {" +
+                "\"missionId\" : \"mission123\"," +
+                "\"incidentId\" : \"incident123\"," +
+                "\"responderId\" : \"responder123\"" +
+                "}" + "}";
+
+        when(processService.getProcessInstance(any(CorrelationKey.class))).thenReturn(processInstance);
+
+        messageListener.processMessage(json);
+
+        verify(processService).getProcessInstance(correlationCaptor.capture());
+        CorrelationKey correlationKey = correlationCaptor.getValue();
+        assertThat(correlationKey.getName(), equalTo("incident123"));
+        verify(processService).signalProcessInstance(100L, "VictimPickedUp", null);
+    }
+
+    @Test
+    public void testProcessVictimPickedUpEventMessageWhenNotFound() {
+
+        String json = "{" + "\"messageType\" : \"VictimPickedUpEvent\"," +
+                "\"id\":\"messageId\"," +
+                "\"invokingService\":\"messageSender\"," +
+                "\"timestamp\":1521148332397," +
+                "\"body\" : {" +
+                "\"missionId\" : \"mission123\"," +
+                "\"incidentId\" : \"incident123\"," +
+                "\"responderId\" : \"responder123\"," +
+                "\"responderStartLat\" : \"30.12345\"," +
+                "\"responderStartLong\" : \"-77.98765\"," +
+                "\"incidentLat\" : \"31.12345\"," +
+                "\"incidentLong\" : \"-78.98765\"," +
+                "\"destinationLat\" : \"32.12345\"," +
+                "\"destinationLong\" : \"-79.98765\"" +
+                "}" + "}";
+
+        when(processService.getProcessInstance(any(CorrelationKey.class))).thenReturn(null);
+
+        messageListener.processMessage(json);
+
+        verify(processService).getProcessInstance(correlationCaptor.capture());
+        CorrelationKey correlationKey = correlationCaptor.getValue();
+        assertThat(correlationKey.getName(), equalTo("incident123"));
+        verify(processService, never()).signalProcessInstance(any(), any(), any());
+    }
+
+    @Test
+    public void testProcessVictimPickedUpEventMessageWhenNoIncidentId() {
+
+        String json = "{" + "\"messageType\" : \"VictimPickedUpEvent\"," +
+                "\"id\":\"messageId\"," +
+                "\"invokingService\":\"messageSender\"," +
+                "\"timestamp\":1521148332397," +
+                "\"body\" : {" +
+                "\"missionId\" : \"mission123\"," +
+                "\"responderId\" : \"responder123\"," +
+                "\"responderStartLat\" : \"30.12345\"," +
+                "\"responderStartLong\" : \"-77.98765\"," +
+                "\"incidentLat\" : \"31.12345\"," +
+                "\"incidentLong\" : \"-78.98765\"," +
+                "\"destinationLat\" : \"32.12345\"," +
+                "\"destinationLong\" : \"-79.98765\"" +
+                "}" + "}";
+
+        messageListener.processMessage(json);
+
+        verify(processService, never()).getProcessInstance(any(CorrelationKey.class));
+        verify(processService, never()).signalProcessInstance(any(), any(), any());
+    }
+
+    @Test
+    public void testProcessVictimDeliveredEventMessage() {
+
+        String json = "{" + "\"messageType\" : \"VictimDeliveredEvent\"," +
+                "\"id\":\"messageId\"," +
+                "\"invokingService\":\"messageSender\"," +
+                "\"timestamp\":1521148332397," +
+                "\"body\" : {" +
+                "\"missionId\" : \"mission123\"," +
+                "\"incidentId\" : \"incident123\"," +
+                "\"responderId\" : \"responder123\"," +
+                "\"responderStartLat\" : \"30.12345\"," +
+                "\"responderStartLong\" : \"-77.98765\"," +
+                "\"incidentLat\" : \"31.12345\"," +
+                "\"incidentLong\" : \"-78.98765\"," +
+                "\"destinationLat\" : \"32.12345\"," +
+                "\"destinationLong\" : \"-79.98765\"" +
+                "}" + "}";
+
+        when(processService.getProcessInstance(any(CorrelationKey.class))).thenReturn(processInstance);
+
+        messageListener.processMessage(json);
+
+        verify(processService).getProcessInstance(correlationCaptor.capture());
+        CorrelationKey correlationKey = correlationCaptor.getValue();
+        assertThat(correlationKey.getName(), equalTo("incident123"));
+        verify(processService).signalProcessInstance(100L, "VictimDelivered", null);
+    }
+
+    @Test
+    public void testProcessVictimDeliveredEventMessageWhenNotFound() {
+
+        String json = "{" + "\"messageType\" : \"VictimDeliveredEvent\"," +
+                "\"id\":\"messageId\"," +
+                "\"invokingService\":\"messageSender\"," +
+                "\"timestamp\":1521148332397," +
+                "\"body\" : {" +
+                "\"missionId\" : \"mission123\"," +
+                "\"incidentId\" : \"incident123\"," +
+                "\"responderId\" : \"responder123\"," +
+                "\"responderStartLat\" : \"30.12345\"," +
+                "\"responderStartLong\" : \"-77.98765\"," +
+                "\"incidentLat\" : \"31.12345\"," +
+                "\"incidentLong\" : \"-78.98765\"," +
+                "\"destinationLat\" : \"32.12345\"," +
+                "\"destinationLong\" : \"-79.98765\"" +
+                "}" + "}";
+
+        when(processService.getProcessInstance(any(CorrelationKey.class))).thenReturn(null);
+
+        messageListener.processMessage(json);
+
+        verify(processService).getProcessInstance(correlationCaptor.capture());
+        CorrelationKey correlationKey = correlationCaptor.getValue();
+        assertThat(correlationKey.getName(), equalTo("incident123"));
+        verify(processService, never()).signalProcessInstance(any(), any(), any());
+    }
+
+    @Test
+    public void testProcessVictimDeliveredEventMessageWhenNoIncidentId() {
+
+        String json = "{" + "\"messageType\" : \"VictimDeliveredEvent\"," +
                 "\"id\":\"messageId\"," +
                 "\"invokingService\":\"messageSender\"," +
                 "\"timestamp\":1521148332397," +
