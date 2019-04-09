@@ -36,6 +36,9 @@ public class KafkaMessageSenderWorkItemHandler implements WorkItemHandler {
     @Value("${sender.destination.update-responder-command}")
     private String updateResponderCommandDestination;
 
+    @Value("${sender.destination.update-incident-command}")
+    private String updateIncidentCommandDestination;
+
     private Map<String, Triple<String, String, BiFunction<String, Map<String, Object>, Pair<String, Message<?>>>>> payloadBuilders = new HashMap<>();
 
     @Override
@@ -48,7 +51,7 @@ public class KafkaMessageSenderWorkItemHandler implements WorkItemHandler {
         }
         Triple<String, String, BiFunction<String, Map<String, Object>, Pair<String, Message<?>>>> messagetypeDestinationBuilderTuple = payloadBuilders.get(messageType);
         if (messagetypeDestinationBuilderTuple == null) {
-            throw new IllegalStateException("No builder found for payload'" + messageType + "'");
+            throw new IllegalStateException("No builder found for payload '" + messageType + "'");
         }
         Pair<String, Message<?>> keyAndMessagePair = messagetypeDestinationBuilderTuple.getRight().apply(messagetypeDestinationBuilderTuple.getLeft(), parameters);
 
@@ -59,7 +62,7 @@ public class KafkaMessageSenderWorkItemHandler implements WorkItemHandler {
     private void send(String destination, String key, Message<?> msg) {
         ListenableFuture<SendResult<String, Message<?>>> future = kafkaTemplate.send(destination, key, msg);
         future.addCallback(
-                result -> log.debug("Sent '" + msg.getMessageType() + "' message with key " + key),
+                result -> log.debug("Sent '" + msg.getMessageType() + "' message with key " + key + " to topic " + destination),
                 ex -> log.error("Error sending '" + msg.getMessageType() + "' message with key " + key, ex));
     }
 
@@ -72,6 +75,7 @@ public class KafkaMessageSenderWorkItemHandler implements WorkItemHandler {
     public void init() {
         addPayloadBuilder("CreateMission", "CreateMissionCommand", createMissionCommandDestination, CreateMissionCommandBuilder::builder);
         addPayloadBuilder("SetResponderUnavailable", "UpdateResponderCommand", updateResponderCommandDestination, SetResponderUnavailableCommandBuilder::builder);
+        addPayloadBuilder("UpdateIncident", "UpdateIncidentCommand", updateIncidentCommandDestination, UpdateIncidentCommandBuilder::builder);
     }
 
     void addPayloadBuilder(String payloadType, String messageType, String destination, BiFunction<String, Map<String, Object>, Pair<String, Message<?>>> builder) {

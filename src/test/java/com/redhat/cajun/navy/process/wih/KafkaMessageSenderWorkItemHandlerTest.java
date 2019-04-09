@@ -20,7 +20,9 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.redhat.cajun.navy.process.message.model.CreateMissionCommand;
 import com.redhat.cajun.navy.process.message.model.Message;
 import com.redhat.cajun.navy.process.message.model.Responder;
+import com.redhat.cajun.navy.process.message.model.UpdateIncidentCommand;
 import com.redhat.cajun.navy.process.message.model.UpdateResponderCommand;
+import com.redhat.cajun.navy.rules.model.Incident;
 import com.redhat.cajun.navy.rules.model.Mission;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -58,6 +60,7 @@ public class KafkaMessageSenderWorkItemHandlerTest {
         setField(wih, null, kafkaTemplate, KafkaTemplate.class);
         setField(wih, "createMissionCommandDestination", "topic-mission-command", String.class);
         setField(wih, "updateResponderCommandDestination", "topic-responder-command", String.class);
+        setField(wih, "updateIncidentCommandDestination", "topic-incident-command", String.class);
         wih.init();
     }
 
@@ -160,6 +163,99 @@ public class KafkaMessageSenderWorkItemHandlerTest {
         assertThat(responder.getLongitude(), nullValue());
         assertThat(responder.getBoatCapacity(), nullValue());
         assertThat(responder.isMedicalKit(), nullValue());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testUpdateIncidentMessageTypeStatusAssigned() {
+        Incident incident = new Incident();
+        incident.setId("incident123");
+        incident.setStatus("Assigned");
+
+        Map<String, Object> parameters = new HashMap<>();
+        parameters.put("MessageType", "UpdateIncident");
+        parameters.put("Payload", incident);
+        when(workItem.getParameters()).thenReturn(parameters);
+        when(workItem.getId()).thenReturn(1L);
+
+        when(kafkaTemplate.send(any(String.class), any(String.class), any(Message.class))).thenReturn(new SettableListenableFuture<>());
+
+        wih.executeWorkItem(workItem, workItemManager);
+        verify(workItemManager).completeWorkItem(eq(1L), anyMap());
+        verify(kafkaTemplate).send(eq("topic-incident-command"), eq("incident123"), messageCaptor.capture());
+
+        Message<UpdateIncidentCommand> message = (Message<UpdateIncidentCommand>) messageCaptor.getValue();
+        assertThat(message.getMessageType(), equalTo("UpdateIncidentCommand"));
+        assertThat(message.getInvokingService(), equalTo("IncidentProcessService"));
+        assertThat(message.getBody(), notNullValue());
+        UpdateIncidentCommand command = message.getBody();
+        assertThat(command, notNullValue());
+        com.redhat.cajun.navy.process.message.model.Incident toUpdate = command.getIncident();
+        assertThat(toUpdate, notNullValue());
+        assertThat(toUpdate.getId(), equalTo("incident123"));
+        assertThat(toUpdate.getStatus(), equalTo("ASSIGNED"));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testUpdateIncidentMessageTypeStatusPickedUp() {
+        Incident incident = new Incident();
+        incident.setId("incident123");
+        incident.setStatus("PickedUp");
+
+        Map<String, Object> parameters = new HashMap<>();
+        parameters.put("MessageType", "UpdateIncident");
+        parameters.put("Payload", incident);
+        when(workItem.getParameters()).thenReturn(parameters);
+        when(workItem.getId()).thenReturn(1L);
+
+        when(kafkaTemplate.send(any(String.class), any(String.class), any(Message.class))).thenReturn(new SettableListenableFuture<>());
+
+        wih.executeWorkItem(workItem, workItemManager);
+        verify(workItemManager).completeWorkItem(eq(1L), anyMap());
+        verify(kafkaTemplate).send(eq("topic-incident-command"), eq("incident123"), messageCaptor.capture());
+
+        Message<UpdateIncidentCommand> message = (Message<UpdateIncidentCommand>) messageCaptor.getValue();
+        assertThat(message.getMessageType(), equalTo("UpdateIncidentCommand"));
+        assertThat(message.getInvokingService(), equalTo("IncidentProcessService"));
+        assertThat(message.getBody(), notNullValue());
+        UpdateIncidentCommand command = message.getBody();
+        assertThat(command, notNullValue());
+        com.redhat.cajun.navy.process.message.model.Incident toUpdate = command.getIncident();
+        assertThat(toUpdate, notNullValue());
+        assertThat(toUpdate.getId(), equalTo("incident123"));
+        assertThat(toUpdate.getStatus(), equalTo("PICKEDUP"));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testUpdateIncidentMessageTypeStatusDelivered() {
+        Incident incident = new Incident();
+        incident.setId("incident123");
+        incident.setStatus("Delivered");
+
+        Map<String, Object> parameters = new HashMap<>();
+        parameters.put("MessageType", "UpdateIncident");
+        parameters.put("Payload", incident);
+        when(workItem.getParameters()).thenReturn(parameters);
+        when(workItem.getId()).thenReturn(1L);
+
+        when(kafkaTemplate.send(any(String.class), any(String.class), any(Message.class))).thenReturn(new SettableListenableFuture<>());
+
+        wih.executeWorkItem(workItem, workItemManager);
+        verify(workItemManager).completeWorkItem(eq(1L), anyMap());
+        verify(kafkaTemplate).send(eq("topic-incident-command"), eq("incident123"), messageCaptor.capture());
+
+        Message<UpdateIncidentCommand> message = (Message<UpdateIncidentCommand>) messageCaptor.getValue();
+        assertThat(message.getMessageType(), equalTo("UpdateIncidentCommand"));
+        assertThat(message.getInvokingService(), equalTo("IncidentProcessService"));
+        assertThat(message.getBody(), notNullValue());
+        UpdateIncidentCommand command = message.getBody();
+        assertThat(command, notNullValue());
+        com.redhat.cajun.navy.process.message.model.Incident toUpdate = command.getIncident();
+        assertThat(toUpdate, notNullValue());
+        assertThat(toUpdate.getId(), equalTo("incident123"));
+        assertThat(toUpdate.getStatus(), equalTo("RESCUED"));
     }
 
     @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
