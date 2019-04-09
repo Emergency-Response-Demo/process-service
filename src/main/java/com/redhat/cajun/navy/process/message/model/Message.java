@@ -4,6 +4,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 public class Message<T> {
 
     private String id;
@@ -14,6 +16,7 @@ public class Message<T> {
 
     private long timestamp;
 
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     private Map<String, String> header;
 
     private T body;
@@ -60,7 +63,6 @@ public class Message<T> {
             message.body = body;
             message.id = UUID.randomUUID().toString();
             message.timestamp = System.currentTimeMillis();
-            message.header = new HashMap<>();
         }
 
         public Builder<T> id(String id) {
@@ -74,6 +76,9 @@ public class Message<T> {
         }
 
         public Builder<T> header(String key, String value) {
+            if (message.header == null) {
+                message.header = new HashMap<>();
+            }
             message.header.put(key, value);
             return this;
         }
