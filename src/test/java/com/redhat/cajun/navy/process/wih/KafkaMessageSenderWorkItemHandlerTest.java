@@ -18,12 +18,14 @@ import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.redhat.cajun.navy.process.message.model.CreateMissionCommand;
+import com.redhat.cajun.navy.process.message.model.IncidentAssignmentEvent;
 import com.redhat.cajun.navy.process.message.model.Message;
 import com.redhat.cajun.navy.process.message.model.Responder;
 import com.redhat.cajun.navy.process.message.model.UpdateIncidentCommand;
 import com.redhat.cajun.navy.process.message.model.UpdateResponderCommand;
 import com.redhat.cajun.navy.rules.model.Incident;
 import com.redhat.cajun.navy.rules.model.Mission;
+import com.redhat.cajun.navy.rules.model.Status;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
@@ -61,6 +63,7 @@ public class KafkaMessageSenderWorkItemHandlerTest {
         setField(wih, "createMissionCommandDestination", "topic-mission-command", String.class);
         setField(wih, "updateResponderCommandDestination", "topic-responder-command", String.class);
         setField(wih, "updateIncidentCommandDestination", "topic-incident-command", String.class);
+        setField(wih, "incidentAssignmentEventDestination", "topic-incident-event", String.class);
         wih.init();
     }
 
@@ -256,6 +259,78 @@ public class KafkaMessageSenderWorkItemHandlerTest {
         assertThat(toUpdate, notNullValue());
         assertThat(toUpdate.getId(), equalTo("incident123"));
         assertThat(toUpdate.getStatus(), equalTo("RESCUED"));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testIncidentAssignmentEventMessageTypeStatusAssigned() {
+        Mission mission = new Mission();
+        mission.setIncidentId("incident123");
+        mission.setIncidentLat(new BigDecimal("30.12345"));
+        mission.setIncidentLong(new BigDecimal("-70.98765"));
+        mission.setResponderId("responder123");
+        mission.setResponderStartLat(new BigDecimal("40.12345"));
+        mission.setResponderStartLong(new BigDecimal("-80.98765"));
+        mission.setDestinationLat(new BigDecimal("50.12345"));
+        mission.setDestinationLong(new BigDecimal("-90.98765"));
+        mission.setStatus(Status.ASSIGNED);
+
+        Map<String, Object> parameters = new HashMap<>();
+        parameters.put("MessageType", "IncidentAssignment");
+        parameters.put("Payload", mission);
+        when(workItem.getParameters()).thenReturn(parameters);
+        when(workItem.getId()).thenReturn(1L);
+
+        when(kafkaTemplate.send(any(String.class), any(String.class), any(Message.class))).thenReturn(new SettableListenableFuture<>());
+
+        wih.executeWorkItem(workItem, workItemManager);
+        verify(workItemManager).completeWorkItem(eq(1L), anyMap());
+        verify(kafkaTemplate).send(eq("topic-incident-event"), eq("incident123"), messageCaptor.capture());
+
+        Message<IncidentAssignmentEvent> message = (Message<IncidentAssignmentEvent>) messageCaptor.getValue();
+        assertThat(message.getMessageType(), equalTo("IncidentAssignmentEvent"));
+        assertThat(message.getInvokingService(), equalTo("IncidentProcessService"));
+        assertThat(message.getBody(), notNullValue());
+        IncidentAssignmentEvent event = message.getBody();
+        assertThat(event, notNullValue());
+        assertThat(event.getIncidentId(), equalTo("incident123"));
+        assertThat(event.getAssignment(), equalTo(true));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testIncidentAssignmentEventMessageTypeStatusUnassigned() {
+        Mission mission = new Mission();
+        mission.setIncidentId("incident123");
+        mission.setIncidentLat(new BigDecimal("30.12345"));
+        mission.setIncidentLong(new BigDecimal("-70.98765"));
+        mission.setResponderId("responder123");
+        mission.setResponderStartLat(new BigDecimal("40.12345"));
+        mission.setResponderStartLong(new BigDecimal("-80.98765"));
+        mission.setDestinationLat(new BigDecimal("50.12345"));
+        mission.setDestinationLong(new BigDecimal("-90.98765"));
+        mission.setStatus(Status.UNASSIGNED);
+
+        Map<String, Object> parameters = new HashMap<>();
+        parameters.put("MessageType", "IncidentAssignment");
+        parameters.put("Payload", mission);
+        when(workItem.getParameters()).thenReturn(parameters);
+        when(workItem.getId()).thenReturn(1L);
+
+        when(kafkaTemplate.send(any(String.class), any(String.class), any(Message.class))).thenReturn(new SettableListenableFuture<>());
+
+        wih.executeWorkItem(workItem, workItemManager);
+        verify(workItemManager).completeWorkItem(eq(1L), anyMap());
+        verify(kafkaTemplate).send(eq("topic-incident-event"), eq("incident123"), messageCaptor.capture());
+
+        Message<IncidentAssignmentEvent> message = (Message<IncidentAssignmentEvent>) messageCaptor.getValue();
+        assertThat(message.getMessageType(), equalTo("IncidentAssignmentEvent"));
+        assertThat(message.getInvokingService(), equalTo("IncidentProcessService"));
+        assertThat(message.getBody(), notNullValue());
+        IncidentAssignmentEvent event = message.getBody();
+        assertThat(event, notNullValue());
+        assertThat(event.getIncidentId(), equalTo("incident123"));
+        assertThat(event.getAssignment(), equalTo(false));
     }
 
     @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)

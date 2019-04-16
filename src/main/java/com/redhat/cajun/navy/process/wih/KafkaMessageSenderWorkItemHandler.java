@@ -39,6 +39,9 @@ public class KafkaMessageSenderWorkItemHandler implements WorkItemHandler {
     @Value("${sender.destination.update-incident-command}")
     private String updateIncidentCommandDestination;
 
+    @Value("${sender.destination.incident-assignment-event}")
+    private String incidentAssignmentEventDestination;
+
     private Map<String, Triple<String, String, BiFunction<String, Map<String, Object>, Pair<String, Message<?>>>>> payloadBuilders = new HashMap<>();
 
     @Override
@@ -76,6 +79,7 @@ public class KafkaMessageSenderWorkItemHandler implements WorkItemHandler {
         addPayloadBuilder("CreateMission", "CreateMissionCommand", createMissionCommandDestination, CreateMissionCommandBuilder::builder);
         addPayloadBuilder("SetResponderUnavailable", "UpdateResponderCommand", updateResponderCommandDestination, SetResponderUnavailableCommandBuilder::builder);
         addPayloadBuilder("UpdateIncident", "UpdateIncidentCommand", updateIncidentCommandDestination, UpdateIncidentCommandBuilder::builder);
+        addPayloadBuilder("IncidentAssignment", "IncidentAssignmentEvent", incidentAssignmentEventDestination, IncidentAssignmentEventBuilder::builder);
     }
 
     void addPayloadBuilder(String payloadType, String messageType, String destination, BiFunction<String, Map<String, Object>, Pair<String, Message<?>>> builder) {
