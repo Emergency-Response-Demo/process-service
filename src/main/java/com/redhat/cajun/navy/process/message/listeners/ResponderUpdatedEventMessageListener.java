@@ -14,6 +14,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -42,9 +43,10 @@ public class ResponderUpdatedEventMessageListener {
     @KafkaListener(topics = "${listener.destination.responder-updated-event}")
     public void processMessage(@Payload String messageAsJson, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key,
                                @Header(KafkaHeaders.RECEIVED_TOPIC) String topic,
-                               @Header(KafkaHeaders.RECEIVED_PARTITION_ID) int partition) {
+                               @Header(KafkaHeaders.RECEIVED_PARTITION_ID) int partition, Acknowledgment ack) {
 
         if (!accept(messageAsJson)) {
+            ack.acknowledge();
             return;
         }
 
@@ -58,6 +60,7 @@ public class ResponderUpdatedEventMessageListener {
             String incidentId = message.getHeaderValue("incidentId");
             if (incidentId == null || incidentId.isEmpty()) {
                 log.warn("Message contains no header value for incidentId. Message cannot be processed!");
+                ack.acknowledge();
                 return;
             }
 
@@ -92,7 +95,7 @@ public class ResponderUpdatedEventMessageListener {
                 processService.signalProcessInstance(instance.getId(), SIGNAL_RESPONDER_AVAILABLE, available);
                 return null;
             });
-
+            ack.acknowledge();
         } catch (Exception e) {
             log.error("Error processing msg " + messageAsJson, e);
             throw new IllegalStateException(e.getMessage(), e);

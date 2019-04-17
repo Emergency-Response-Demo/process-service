@@ -25,6 +25,7 @@ import org.kie.internal.process.CorrelationKey;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
+import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionStatus;
 
@@ -43,6 +44,9 @@ public class IncidentReportedEventMessageListenerTest {
 
     @Mock
     private ProcessInstance processInstance;
+
+    @Mock
+    private Acknowledgment ack;
 
     @Captor
     private ArgumentCaptor<String> processIdCaptor;
@@ -83,7 +87,7 @@ public class IncidentReportedEventMessageListenerTest {
                 "\"timestamp\": 1521148332350" +
                 "}}";
 
-        messageListener.processMessage(json, "incident123", "topic1", 1);
+        messageListener.processMessage(json, "incident123", "topic1", 1, ack);
 
 
         verify(processService).startProcess(any(), processIdCaptor.capture(), correlationKeyCaptor.capture(), parametersCaptor.capture());
@@ -113,6 +117,8 @@ public class IncidentReportedEventMessageListenerTest {
         assertThat(destination2.getName(), equalTo("loc2"));
         assertThat(destination2.getLatitude(), equalTo(new BigDecimal("30.12345")));
         assertThat(destination2.getLongitude(), equalTo(new BigDecimal("-60.98765")));
+
+        verify(ack).acknowledge();
     }
 
     private DestinationLocations destinationLocations() {

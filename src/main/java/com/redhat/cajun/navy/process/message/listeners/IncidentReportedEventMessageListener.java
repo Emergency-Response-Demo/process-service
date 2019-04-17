@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -62,16 +63,17 @@ public class IncidentReportedEventMessageListener {
     @KafkaListener(topics = "${listener.destination.incident-reported-event}")
     public void processMessage(@Payload String messageAsJson, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key,
                                @Header(KafkaHeaders.RECEIVED_TOPIC) String topic,
-                               @Header(KafkaHeaders.RECEIVED_PARTITION_ID) int partition) {
+                               @Header(KafkaHeaders.RECEIVED_PARTITION_ID) int partition, Acknowledgment ack) {
 
         if (!accept(messageAsJson)) {
+            ack.acknowledge();
             return;
         }
         log.debug("Processing 'IncidentReportedEvent' message for incident " + key + " from topic:partition " + topic + ":" + partition);
-        doProcessMessage(messageAsJson, key);
+        doProcessMessage(messageAsJson, ack);
     }
 
-    private void doProcessMessage(String messageAsJson, String key) {
+    private void doProcessMessage(String messageAsJson, Acknowledgment ack) {
         Message<IncidentReportedEvent> message;
         try {
 
@@ -110,6 +112,7 @@ public class IncidentReportedEventMessageListener {
                 log.debug("Started incident process for incident " + incidentId + ". ProcessInstanceId = " + pi);
                 return null;
             });
+            ack.acknowledge();
         } catch (Exception e) {
             log.error("Error processing msg " + messageAsJson, e);
             throw new IllegalStateException(e.getMessage(), e);

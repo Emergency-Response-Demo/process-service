@@ -19,6 +19,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.annotation.KafkaListener;
+import org.springframework.kafka.support.Acknowledgment;
+import org.springframework.kafka.support.KafkaHeaders;
+import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -48,56 +51,61 @@ public class MissionEventTopicListener {
     private PlatformTransactionManager transactionManager;
 
     @KafkaListener(topics = "${listener.destination.mission-event}")
-    public void processMessage(@Payload String messageAsJson) {
+    public void processMessage(@Payload String messageAsJson, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key,
+                               @Header(KafkaHeaders.RECEIVED_TOPIC) String topic,
+                               @Header(KafkaHeaders.RECEIVED_PARTITION_ID) int partition, Acknowledgment ack) {
 
-        messageType(messageAsJson).ifPresent(s -> {
+        messageType(messageAsJson, key, topic, partition, ack).ifPresent(s -> {
             switch (s) {
                 case TYPE_MISSION_STARTED_EVENT:
-                    processMissionStartedEvent(messageAsJson);
+                    processMissionStartedEvent(messageAsJson, ack);
                     break;
                 case TYPE_VICTIM_PICKEDUP_EVENT:
-                    processVictimPickedUpEvent(messageAsJson);
+                    processVictimPickedUpEvent(messageAsJson, ack);
                     break;
                 case TYPE_VICTIM_DELIVERED_EVENT:
-                    processVictimDeliveredEvent(messageAsJson);
+                    processVictimDeliveredEvent(messageAsJson, ack);
                     break;
             }
         });
     }
 
-    private void processMissionStartedEvent(String messageAsJson) {
+    private void processMissionStartedEvent(String messageAsJson, Acknowledgment ack) {
 
         Message<MissionStartedEvent> message;
         try {
             message = new ObjectMapper().readValue(messageAsJson, new TypeReference<Message<MissionStartedEvent>>() {});
             String incidentId = message.getBody().getIncidentId();
             signalProcess(incidentId, SIGNAL_MISSION_STARTED);
+            ack.acknowledge();
        } catch (Exception e) {
             log.error("Error processing msg " + messageAsJson, e);
             throw new IllegalStateException(e.getMessage(), e);
         }
     }
 
-    private void processVictimPickedUpEvent(String messageAsJson) {
+    private void processVictimPickedUpEvent(String messageAsJson, Acknowledgment ack) {
 
         Message<VictimPickedUpEvent> message;
         try {
             message = new ObjectMapper().readValue(messageAsJson, new TypeReference<Message<VictimPickedUpEvent>>() {});
             String incidentId = message.getBody().getIncidentId();
             signalProcess(incidentId, SIGNAL_VICTIM_PICKEDUP);
+            ack.acknowledge();
         } catch (Exception e) {
             log.error("Error processing msg " + messageAsJson, e);
             throw new IllegalStateException(e.getMessage(), e);
         }
     }
 
-    private void processVictimDeliveredEvent(String messageAsJson) {
+    private void processVictimDeliveredEvent(String messageAsJson, Acknowledgment ack) {
 
         Message<VictimDeliveredEvent> message;
         try {
             message = new ObjectMapper().readValue(messageAsJson, new TypeReference<Message<VictimDeliveredEvent>>() {});
             String incidentId = message.getBody().getIncidentId();
             signalProcess(incidentId, SIGNAL_VICTIM_DELIVERED);
+            ack.acknowledge();
         } catch (Exception e) {
             log.error("Error processing msg " + messageAsJson, e);
             throw new IllegalStateException(e.getMessage(), e);
@@ -122,16 +130,18 @@ public class MissionEventTopicListener {
         });
     }
 
-    private Optional<String> messageType(String messageAsJson) {
+    private Optional<String> messageType(String messageAsJson, String key, String topic, int partition, Acknowledgment ack) {
         try {
             String messageType = JsonPath.read(messageAsJson, "$.messageType");
             if (Arrays.asList(ACCEPTED_MESSAGE_TYPES).contains(messageType)) {
+                log.debug("Processing + '" + messageType + "' message wioth key " + key + " from topic:partition " + topic + ":" + partition);
                 return Optional.of(messageType);
             }
             log.debug("Message with type '" + messageType + "' is ignored");
         } catch (Exception e) {
             log.warn("Unexpected message without 'messageType' field.");
         }
+        ack.acknowledge();
         return Optional.empty();
     }
 }

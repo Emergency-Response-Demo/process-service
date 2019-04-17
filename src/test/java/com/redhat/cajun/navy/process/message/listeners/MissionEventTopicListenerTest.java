@@ -17,6 +17,7 @@ import org.kie.internal.process.CorrelationKey;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
+import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionStatus;
 
@@ -33,6 +34,9 @@ public class MissionEventTopicListenerTest {
 
     @Mock
     private ProcessInstance processInstance;
+
+    @Mock
+    private Acknowledgment ack;
 
     @Captor
     private ArgumentCaptor<CorrelationKey> correlationCaptor;
@@ -70,12 +74,14 @@ public class MissionEventTopicListenerTest {
 
         when(processService.getProcessInstance(any(CorrelationKey.class))).thenReturn(processInstance);
 
-        messageListener.processMessage(json);
+        messageListener.processMessage(json, "key", "topic", 1, ack);
 
         verify(processService).getProcessInstance(correlationCaptor.capture());
         CorrelationKey correlationKey = correlationCaptor.getValue();
         assertThat(correlationKey.getName(), equalTo("incident123"));
         verify(processService).signalProcessInstance(100L, "MissionStarted", null);
+
+        verify(ack).acknowledge();
     }
 
     @Test
@@ -99,12 +105,14 @@ public class MissionEventTopicListenerTest {
 
         when(processService.getProcessInstance(any(CorrelationKey.class))).thenReturn(null);
 
-        messageListener.processMessage(json);
+        messageListener.processMessage(json, "key", "topic", 1, ack);
 
         verify(processService).getProcessInstance(correlationCaptor.capture());
         CorrelationKey correlationKey = correlationCaptor.getValue();
         assertThat(correlationKey.getName(), equalTo("incident123"));
         verify(processService, never()).signalProcessInstance(any(), any(), any());
+
+        verify(ack).acknowledge();
     }
 
     @Test
@@ -125,10 +133,12 @@ public class MissionEventTopicListenerTest {
                 "\"destinationLong\" : \"-79.98765\"" +
                 "}" + "}";
 
-        messageListener.processMessage(json);
+        messageListener.processMessage(json, "key", "topic", 1, ack);
 
         verify(processService, never()).getProcessInstance(any(CorrelationKey.class));
         verify(processService, never()).signalProcessInstance(any(), any(), any());
+
+        verify(ack).acknowledge();
     }
 
     @Test
@@ -146,12 +156,14 @@ public class MissionEventTopicListenerTest {
 
         when(processService.getProcessInstance(any(CorrelationKey.class))).thenReturn(processInstance);
 
-        messageListener.processMessage(json);
+        messageListener.processMessage(json, "key", "topic", 1, ack);
 
         verify(processService).getProcessInstance(correlationCaptor.capture());
         CorrelationKey correlationKey = correlationCaptor.getValue();
         assertThat(correlationKey.getName(), equalTo("incident123"));
         verify(processService).signalProcessInstance(100L, "VictimPickedUp", null);
+
+        verify(ack).acknowledge();
     }
 
     @Test
@@ -175,12 +187,14 @@ public class MissionEventTopicListenerTest {
 
         when(processService.getProcessInstance(any(CorrelationKey.class))).thenReturn(null);
 
-        messageListener.processMessage(json);
+        messageListener.processMessage(json, "key", "topic", 1, ack);
 
         verify(processService).getProcessInstance(correlationCaptor.capture());
         CorrelationKey correlationKey = correlationCaptor.getValue();
         assertThat(correlationKey.getName(), equalTo("incident123"));
         verify(processService, never()).signalProcessInstance(any(), any(), any());
+
+        verify(ack).acknowledge();
     }
 
     @Test
@@ -201,10 +215,12 @@ public class MissionEventTopicListenerTest {
                 "\"destinationLong\" : \"-79.98765\"" +
                 "}" + "}";
 
-        messageListener.processMessage(json);
+        messageListener.processMessage(json, "key", "topic", 1, ack);
 
         verify(processService, never()).getProcessInstance(any(CorrelationKey.class));
         verify(processService, never()).signalProcessInstance(any(), any(), any());
+
+        verify(ack).acknowledge();
     }
 
     @Test
@@ -228,12 +244,14 @@ public class MissionEventTopicListenerTest {
 
         when(processService.getProcessInstance(any(CorrelationKey.class))).thenReturn(processInstance);
 
-        messageListener.processMessage(json);
+        messageListener.processMessage(json, "key", "topic", 1, ack);
 
         verify(processService).getProcessInstance(correlationCaptor.capture());
         CorrelationKey correlationKey = correlationCaptor.getValue();
         assertThat(correlationKey.getName(), equalTo("incident123"));
         verify(processService).signalProcessInstance(100L, "VictimDelivered", null);
+
+        verify(ack).acknowledge();
     }
 
     @Test
@@ -257,12 +275,14 @@ public class MissionEventTopicListenerTest {
 
         when(processService.getProcessInstance(any(CorrelationKey.class))).thenReturn(null);
 
-        messageListener.processMessage(json);
+        messageListener.processMessage(json, "key", "topic", 1, ack);
 
         verify(processService).getProcessInstance(correlationCaptor.capture());
         CorrelationKey correlationKey = correlationCaptor.getValue();
         assertThat(correlationKey.getName(), equalTo("incident123"));
         verify(processService, never()).signalProcessInstance(any(), any(), any());
+
+        verify(ack).acknowledge();
     }
 
     @Test
@@ -283,10 +303,12 @@ public class MissionEventTopicListenerTest {
                 "\"destinationLong\" : \"-79.98765\"" +
                 "}" + "}";
 
-        messageListener.processMessage(json);
+        messageListener.processMessage(json, "key", "topic", 1, ack);
 
         verify(processService, never()).getProcessInstance(any(CorrelationKey.class));
         verify(processService, never()).signalProcessInstance(any(), any(), any());
+
+        verify(ack).acknowledge();
     }
 
     @Test
@@ -307,10 +329,12 @@ public class MissionEventTopicListenerTest {
                 "\"destinationLong\" : \"-79.98765\"" +
                 "}" + "}";
 
-        messageListener.processMessage(json);
+        messageListener.processMessage(json, "key", "topic", 1, ack);
 
         verify(processService, never()).getProcessInstance(any(CorrelationKey.class));
         verify(processService, never()).signalProcessInstance(any(), any(), any());
+
+        verify(ack).acknowledge();
     }
 
     @Test
@@ -320,10 +344,12 @@ public class MissionEventTopicListenerTest {
                 "\"field2\":\"calue2\"" +
                 "}";
 
-        messageListener.processMessage(json);
+        messageListener.processMessage(json, "key", "topic", 1, ack);
 
         verify(processService, never()).getProcessInstance(any(CorrelationKey.class));
         verify(processService, never()).signalProcessInstance(any(), any(), any());
+
+        verify(ack).acknowledge();
     }
 
 }

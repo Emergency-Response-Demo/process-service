@@ -18,6 +18,7 @@ import org.kie.internal.process.CorrelationKey;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
+import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionStatus;
 
@@ -34,6 +35,9 @@ public class ResponderUpdatedEventMessageListenerTest {
 
     @Mock
     private ProcessInstance processInstance;
+
+    @Mock
+    private Acknowledgment ack;
 
     @Captor
     private ArgumentCaptor<CorrelationKey> correlationKeyCaptor;
@@ -72,12 +76,13 @@ public class ResponderUpdatedEventMessageListenerTest {
 
         when(processService.getProcessInstance(any(CorrelationKey.class))).thenReturn(processInstance);
 
-        messageListener.processMessage(json, "responderId", "test-topic", 1);
+        messageListener.processMessage(json, "responderId", "test-topic", 1, ack);
 
         verify(processService).signalProcessInstance(100L, "ResponderAvailable", true);
         verify(processService).getProcessInstance(correlationKeyCaptor.capture());
         CorrelationKey correlationKey = correlationKeyCaptor.getValue();
         assertThat(correlationKey.getName(), equalTo("incident123"));
+        verify(ack).acknowledge();
     }
 
     @Test
@@ -102,12 +107,14 @@ public class ResponderUpdatedEventMessageListenerTest {
 
         when(processService.getProcessInstance(any(CorrelationKey.class))).thenReturn(processInstance);
 
-        messageListener.processMessage(json, "responderId", "test-topic", 1);
+        messageListener.processMessage(json, "responderId", "test-topic", 1, ack);
 
         verify(processService).signalProcessInstance(100L, "ResponderAvailable", false);
         verify(processService).getProcessInstance(correlationKeyCaptor.capture());
         CorrelationKey correlationKey = correlationKeyCaptor.getValue();
         assertThat(correlationKey.getName(), equalTo("incident123"));
+
+        verify(ack).acknowledge();
     }
 
     @Test
@@ -130,10 +137,12 @@ public class ResponderUpdatedEventMessageListenerTest {
                 "\"available\" : false" +
                 "}" + "}" + "}";
 
-        messageListener.processMessage(json, "responderId", "test-topic", 1);
+        messageListener.processMessage(json, "responderId", "test-topic", 1, ack);
 
         verify(processService, never()).signalProcessInstance(any(), any(), any());
         verify(processService, never()).getProcessInstance(any(CorrelationKey.class));
+
+        verify(ack).acknowledge();
     }
 
     @Test
@@ -158,10 +167,12 @@ public class ResponderUpdatedEventMessageListenerTest {
 
         when(processService.getProcessInstance(any(CorrelationKey.class))).thenReturn(null);
 
-        messageListener.processMessage(json, "responderId", "test-topic", 1);
+        messageListener.processMessage(json, "responderId", "test-topic", 1, ack);
 
         verify(processService, never()).signalProcessInstance(any(), any(), any());
         verify(processService, times(3)).getProcessInstance(any(CorrelationKey.class));
+
+        verify(ack).acknowledge();
     }
 
     @Test
@@ -184,10 +195,12 @@ public class ResponderUpdatedEventMessageListenerTest {
                 "\"available\" : false" +
                 "}" + "}" + "}";
 
-        messageListener.processMessage(json, "responderId", "test-topic", 1);
+        messageListener.processMessage(json, "responderId", "test-topic", 1, ack);
 
         verify(processService, never()).signalProcessInstance(any(), any(), any());
         verify(processService, never()).getProcessInstance(any(CorrelationKey.class));
+
+        verify(ack).acknowledge();
     }
 
     @Test
@@ -196,10 +209,12 @@ public class ResponderUpdatedEventMessageListenerTest {
                 "\"field2\":\"calue2\"" +
                 "}";
 
-        messageListener.processMessage(json, "responderId", "test-topic", 1);
+        messageListener.processMessage(json, "responderId", "test-topic", 1, ack);
 
         verify(processService, never()).signalProcessInstance(any(), any(), any());
         verify(processService, never()).getProcessInstance(any(CorrelationKey.class));
+
+        verify(ack).acknowledge();
     }
 
 
