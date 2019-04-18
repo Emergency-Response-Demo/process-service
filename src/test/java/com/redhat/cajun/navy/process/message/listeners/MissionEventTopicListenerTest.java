@@ -74,7 +74,7 @@ public class MissionEventTopicListenerTest {
 
         when(processService.getProcessInstance(any(CorrelationKey.class))).thenReturn(processInstance);
 
-        messageListener.processMessage(json, "key", "topic", 1, ack);
+        messageListener.processMessage(json, "topic", 1, ack);
 
         verify(processService).getProcessInstance(correlationCaptor.capture());
         CorrelationKey correlationKey = correlationCaptor.getValue();
@@ -105,7 +105,7 @@ public class MissionEventTopicListenerTest {
 
         when(processService.getProcessInstance(any(CorrelationKey.class))).thenReturn(null);
 
-        messageListener.processMessage(json, "key", "topic", 1, ack);
+        messageListener.processMessage(json, "topic", 1, ack);
 
         verify(processService).getProcessInstance(correlationCaptor.capture());
         CorrelationKey correlationKey = correlationCaptor.getValue();
@@ -133,7 +133,7 @@ public class MissionEventTopicListenerTest {
                 "\"destinationLong\" : \"-79.98765\"" +
                 "}" + "}";
 
-        messageListener.processMessage(json, "key", "topic", 1, ack);
+        messageListener.processMessage(json, "topic", 1, ack);
 
         verify(processService, never()).getProcessInstance(any(CorrelationKey.class));
         verify(processService, never()).signalProcessInstance(any(), any(), any());
@@ -156,7 +156,7 @@ public class MissionEventTopicListenerTest {
 
         when(processService.getProcessInstance(any(CorrelationKey.class))).thenReturn(processInstance);
 
-        messageListener.processMessage(json, "key", "topic", 1, ack);
+        messageListener.processMessage(json, "topic", 1, ack);
 
         verify(processService).getProcessInstance(correlationCaptor.capture());
         CorrelationKey correlationKey = correlationCaptor.getValue();
@@ -187,7 +187,7 @@ public class MissionEventTopicListenerTest {
 
         when(processService.getProcessInstance(any(CorrelationKey.class))).thenReturn(null);
 
-        messageListener.processMessage(json, "key", "topic", 1, ack);
+        messageListener.processMessage(json, "topic", 1, ack);
 
         verify(processService).getProcessInstance(correlationCaptor.capture());
         CorrelationKey correlationKey = correlationCaptor.getValue();
@@ -215,7 +215,7 @@ public class MissionEventTopicListenerTest {
                 "\"destinationLong\" : \"-79.98765\"" +
                 "}" + "}";
 
-        messageListener.processMessage(json, "key", "topic", 1, ack);
+        messageListener.processMessage(json, "topic", 1, ack);
 
         verify(processService, never()).getProcessInstance(any(CorrelationKey.class));
         verify(processService, never()).signalProcessInstance(any(), any(), any());
@@ -244,7 +244,7 @@ public class MissionEventTopicListenerTest {
 
         when(processService.getProcessInstance(any(CorrelationKey.class))).thenReturn(processInstance);
 
-        messageListener.processMessage(json, "key", "topic", 1, ack);
+        messageListener.processMessage(json, "topic", 1, ack);
 
         verify(processService).getProcessInstance(correlationCaptor.capture());
         CorrelationKey correlationKey = correlationCaptor.getValue();
@@ -275,7 +275,7 @@ public class MissionEventTopicListenerTest {
 
         when(processService.getProcessInstance(any(CorrelationKey.class))).thenReturn(null);
 
-        messageListener.processMessage(json, "key", "topic", 1, ack);
+        messageListener.processMessage(json, "topic", 1, ack);
 
         verify(processService).getProcessInstance(correlationCaptor.capture());
         CorrelationKey correlationKey = correlationCaptor.getValue();
@@ -303,7 +303,7 @@ public class MissionEventTopicListenerTest {
                 "\"destinationLong\" : \"-79.98765\"" +
                 "}" + "}";
 
-        messageListener.processMessage(json, "key", "topic", 1, ack);
+        messageListener.processMessage(json, "topic", 1, ack);
 
         verify(processService, never()).getProcessInstance(any(CorrelationKey.class));
         verify(processService, never()).signalProcessInstance(any(), any(), any());
@@ -329,7 +329,7 @@ public class MissionEventTopicListenerTest {
                 "\"destinationLong\" : \"-79.98765\"" +
                 "}" + "}";
 
-        messageListener.processMessage(json, "key", "topic", 1, ack);
+        messageListener.processMessage(json, "topic", 1, ack);
 
         verify(processService, never()).getProcessInstance(any(CorrelationKey.class));
         verify(processService, never()).signalProcessInstance(any(), any(), any());
@@ -341,10 +341,10 @@ public class MissionEventTopicListenerTest {
     public void testProcessMessageWhenWrongMessageStructure() {
 
         String json = "{" + "\"field1\" : \"value1\"," +
-                "\"field2\":\"calue2\"" +
+                "\"field2\":\"value2\"" +
                 "}";
 
-        messageListener.processMessage(json, "key", "topic", 1, ack);
+        messageListener.processMessage(json, "topic", 1, ack);
 
         verify(processService, never()).getProcessInstance(any(CorrelationKey.class));
         verify(processService, never()).signalProcessInstance(any(), any(), any());

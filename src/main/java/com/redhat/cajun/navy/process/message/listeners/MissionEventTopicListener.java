@@ -51,11 +51,11 @@ public class MissionEventTopicListener {
     private PlatformTransactionManager transactionManager;
 
     @KafkaListener(topics = "${listener.destination.mission-event}")
-    public void processMessage(@Payload String messageAsJson, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key,
+    public void processMessage(@Payload String messageAsJson,
                                @Header(KafkaHeaders.RECEIVED_TOPIC) String topic,
                                @Header(KafkaHeaders.RECEIVED_PARTITION_ID) int partition, Acknowledgment ack) {
 
-        messageType(messageAsJson, key, topic, partition, ack).ifPresent(s -> {
+        messageType(messageAsJson, topic, partition, ack).ifPresent(s -> {
             switch (s) {
                 case TYPE_MISSION_STARTED_EVENT:
                     processMissionStartedEvent(messageAsJson, ack);
@@ -130,11 +130,11 @@ public class MissionEventTopicListener {
         });
     }
 
-    private Optional<String> messageType(String messageAsJson, String key, String topic, int partition, Acknowledgment ack) {
+    private Optional<String> messageType(String messageAsJson, String topic, int partition, Acknowledgment ack) {
         try {
             String messageType = JsonPath.read(messageAsJson, "$.messageType");
             if (Arrays.asList(ACCEPTED_MESSAGE_TYPES).contains(messageType)) {
-                log.debug("Processing + '" + messageType + "' message wioth key " + key + " from topic:partition " + topic + ":" + partition);
+                log.debug("Processing + '" + messageType + " from topic:partition " + topic + ":" + partition);
                 return Optional.of(messageType);
             }
             log.debug("Message with type '" + messageType + "' is ignored");
