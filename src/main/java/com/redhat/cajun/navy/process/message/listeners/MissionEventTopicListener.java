@@ -34,9 +34,9 @@ public class MissionEventTopicListener {
     private static final Logger log = LoggerFactory.getLogger(MissionEventTopicListener.class);
 
     private static final String TYPE_MISSION_STARTED_EVENT = "MissionStartedEvent";
-    private static final String TYPE_VICTIM_PICKEDUP_EVENT = "VictimPickedUpEvent";
-    private static final String TYPE_VICTIM_DELIVERED_EVENT = "VictimDeliveredEvent";
-    private static final String[] ACCEPTED_MESSAGE_TYPES = {TYPE_MISSION_STARTED_EVENT, TYPE_VICTIM_PICKEDUP_EVENT, TYPE_VICTIM_DELIVERED_EVENT};
+    private static final String TYPE_MISSION_PICKEDUP_EVENT = "MissionPickedUpEvent";
+    private static final String TYPE_MISSION_COMPLETED_EVENT = "MissionCompletedEvent";
+    private static final String[] ACCEPTED_MESSAGE_TYPES = {TYPE_MISSION_STARTED_EVENT, TYPE_MISSION_PICKEDUP_EVENT, TYPE_MISSION_COMPLETED_EVENT};
 
     private static final String SIGNAL_MISSION_STARTED = "MissionStarted";
     private static final String SIGNAL_VICTIM_PICKEDUP = "VictimPickedUp";
@@ -60,10 +60,10 @@ public class MissionEventTopicListener {
                 case TYPE_MISSION_STARTED_EVENT:
                     processMissionStartedEvent(messageAsJson, ack);
                     break;
-                case TYPE_VICTIM_PICKEDUP_EVENT:
+                case TYPE_MISSION_PICKEDUP_EVENT:
                     processVictimPickedUpEvent(messageAsJson, ack);
                     break;
-                case TYPE_VICTIM_DELIVERED_EVENT:
+                case TYPE_MISSION_COMPLETED_EVENT:
                     processVictimDeliveredEvent(messageAsJson, ack);
                     break;
             }

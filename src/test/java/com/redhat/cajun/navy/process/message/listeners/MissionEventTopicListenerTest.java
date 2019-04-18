@@ -142,9 +142,9 @@ public class MissionEventTopicListenerTest {
     }
 
     @Test
-    public void testProcessVictimPickedUpEventMessage() {
+    public void testProcessMissionPickedUpEventMessage() {
 
-        String json = "{" + "\"messageType\" : \"VictimPickedUpEvent\"," +
+        String json = "{" + "\"messageType\" : \"MissionPickedUpEvent\"," +
                 "\"id\":\"messageId\"," +
                 "\"invokingService\":\"messageSender\"," +
                 "\"timestamp\":1521148332397," +
@@ -167,9 +167,9 @@ public class MissionEventTopicListenerTest {
     }
 
     @Test
-    public void testProcessVictimPickedUpEventMessageWhenNotFound() {
+    public void testProcessMissionPickedUpEventMessageWhenNotFound() {
 
-        String json = "{" + "\"messageType\" : \"VictimPickedUpEvent\"," +
+        String json = "{" + "\"messageType\" : \"MissionPickedUpEvent\"," +
                 "\"id\":\"messageId\"," +
                 "\"invokingService\":\"messageSender\"," +
                 "\"timestamp\":1521148332397," +
@@ -224,9 +224,9 @@ public class MissionEventTopicListenerTest {
     }
 
     @Test
-    public void testProcessVictimDeliveredEventMessage() {
+    public void testProcessMissionCompletedEventMessage() {
 
-        String json = "{" + "\"messageType\" : \"VictimDeliveredEvent\"," +
+        String json = "{" + "\"messageType\" : \"MissionCompletedEvent\"," +
                 "\"id\":\"messageId\"," +
                 "\"invokingService\":\"messageSender\"," +
                 "\"timestamp\":1521148332397," +
@@ -255,9 +255,9 @@ public class MissionEventTopicListenerTest {
     }
 
     @Test
-    public void testProcessVictimDeliveredEventMessageWhenNotFound() {
+    public void testProcessMissionCompletedEventMessageWhenNotFound() {
 
-        String json = "{" + "\"messageType\" : \"VictimDeliveredEvent\"," +
+        String json = "{" + "\"messageType\" : \"MissionCompletedEvent\"," +
                 "\"id\":\"messageId\"," +
                 "\"invokingService\":\"messageSender\"," +
                 "\"timestamp\":1521148332397," +
