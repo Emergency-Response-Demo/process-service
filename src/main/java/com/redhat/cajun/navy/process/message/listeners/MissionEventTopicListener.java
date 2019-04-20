@@ -134,7 +134,7 @@ public class MissionEventTopicListener {
         try {
             String messageType = JsonPath.read(messageAsJson, "$.messageType");
             if (Arrays.asList(ACCEPTED_MESSAGE_TYPES).contains(messageType)) {
-                log.debug("Processing + '" + messageType + " from topic:partition " + topic + ":" + partition);
+                log.debug("Processing '" + messageType + "' from topic:partition " + topic + ":" + partition);
                 return Optional.of(messageType);
             }
             log.debug("Message with type '" + messageType + "' is ignored");

@@ -68,6 +68,7 @@ public class KafkaConfiguration {
         factory.setConsumerFactory(consumerFactory());
         factory.setConcurrency(concurrency);
         factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.MANUAL_IMMEDIATE);
+        factory.setAutoStartup(false);
         return factory;
     }
 }
