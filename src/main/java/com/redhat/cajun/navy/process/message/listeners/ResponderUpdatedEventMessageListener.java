@@ -6,6 +6,7 @@ import com.jayway.jsonpath.JsonPath;
 import com.redhat.cajun.navy.process.message.model.Message;
 import com.redhat.cajun.navy.process.message.model.ResponderUpdatedEvent;
 import org.jbpm.services.api.ProcessService;
+import org.jbpm.services.api.query.QueryService;
 import org.kie.api.runtime.process.ProcessInstance;
 import org.kie.internal.KieInternalServices;
 import org.kie.internal.process.CorrelationKey;
@@ -34,6 +35,9 @@ public class ResponderUpdatedEventMessageListener {
 
     @Autowired
     private ProcessService processService;
+
+    @Autowired
+    private QueryService queryService;
 
     @Autowired
     private PlatformTransactionManager transactionManager;
@@ -68,33 +72,35 @@ public class ResponderUpdatedEventMessageListener {
 
             Boolean available = "success".equals(message.getBody().getStatus());
 
-            TransactionTemplate template = new TransactionTemplate(transactionManager);
-            template.execute((TransactionStatus s) -> {
-                int count = 1;
-                ProcessInstance instance = null;
-                // it seems that sometimes the process instance has not been updated in the database when calling getProcessInstance().
-                // dirty hack: if the process instance cannot be found, pause the thread for 300 ms and retry. Bail out after 3 times.
-                while (count <= 3) {
-                    instance = processService.getProcessInstance(correlationKey);
-                    if (instance == null) {
-                        log.warn("Try " + count + " - Process instance with correlationKey '" + incidentId + "' not found.");
-                        try {
-                            Thread.sleep(300);
-                        } catch (InterruptedException e) {
-                            e.printStackTrace();
-                        }
-                        count++;
-                    } else {
-                        break;
+            log.debug("Signaling process with correlationkey '" + correlationKey + ". Responder '" + key + "', available '" + available + "'." );
+            final IntegerHolder holder = new IntegerHolder(5);
+            while (holder.counting()) {
+                TransactionTemplate template = new TransactionTemplate(transactionManager);
+                template.execute((TransactionStatus s) -> {
+                    // check if process is waiting on 'ResponderAvailable' signal
+                    if (!SignalsByCorrelationKeyHelper.waitingForSignal(queryService, incidentId, "ResponderAvailable")) {
+                        log.warn("Try " + holder.getValue() + " - Process instance with correlationKey '" + incidentId + "' is not waiting for signal 'ResponderAvailable'.");
+                        holder.add();
+                        return null;
                     }
-                }
-                if (instance == null) {
-                    log.warn("Process instance with correlationKey '" + incidentId + "' not found.");
+                    holder.reset();
                     return null;
+                });
+                if (holder.limit()) {
+                    log.warn("Process instance with correlationKey '" + incidentId + "' is not waiting for signal 'ResponderAvailable'. Process instance is not signaled.");
+                } else if (holder.counting()) {
+                    log.info("Sleeping for 300 ms");
+                    Thread.sleep(300);
                 }
-                processService.signalProcessInstance(instance.getId(), SIGNAL_RESPONDER_AVAILABLE, available);
-                return null;
-            });
+            }
+            if (holder.done()) {
+                TransactionTemplate template = new TransactionTemplate(transactionManager);
+                template.execute((TransactionStatus s) -> {
+                    ProcessInstance instance = processService.getProcessInstance(correlationKey);
+                    processService.signalProcessInstance(instance.getId(), SIGNAL_RESPONDER_AVAILABLE, available);
+                    return null;
+                });
+            }
             ack.acknowledge();
         } catch (Exception e) {
             log.error("Error processing msg " + messageAsJson, e);
@@ -117,4 +123,40 @@ public class ResponderUpdatedEventMessageListener {
         return false;
     }
 
+    public static class IntegerHolder {
+
+        private int value;
+
+        private int limit;
+
+        public IntegerHolder(int limit) {
+            value = 1;
+            this.limit = limit;
+        }
+
+        public void add() {
+            value++;
+        }
+
+        public int getValue() {
+            return value;
+        }
+
+        public void reset() {
+            value = 0;
+        }
+
+        public boolean limit() {
+            return value > limit;
+        }
+
+        public boolean counting() {
+            return value > 0 && value <= limit;
+        }
+
+        public boolean done() {
+            return value == 0;
+        }
+
+    }
 }
