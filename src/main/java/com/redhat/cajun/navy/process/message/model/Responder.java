@@ -3,6 +3,9 @@ package com.redhat.cajun.navy.process.message.model;
 import java.math.BigDecimal;
 import java.util.Objects;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Responder {
 
     private String id;

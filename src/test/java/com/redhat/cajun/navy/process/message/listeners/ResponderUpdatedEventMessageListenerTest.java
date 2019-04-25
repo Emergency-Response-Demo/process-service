@@ -86,6 +86,38 @@ public class ResponderUpdatedEventMessageListenerTest {
     }
 
     @Test
+    public void testProcessMessageWithPersonField() {
+        String json = "{" + "\"messageType\" : \"ResponderUpdatedEvent\"," +
+                "\"id\":\"messageId\"," +
+                "\"invokingService\":\"messageSender\"," +
+                "\"timestamp\":1521148332397," +
+                "\"header\" : {\"incidentId\" : \"incident123\"}," +
+                "\"body\" : {" +
+                "\"status\" : \"success\"," +
+                "\"responder\" : {" +
+                "\"id\" : \"responderId\"," +
+                "\"name\" : \"John Doe\"," +
+                "\"phoneNumber\" : \"111-222-333\"," +
+                "\"latitude\" : 30.12345," +
+                "\"longitude\" : -70.12345," +
+                "\"boatCapacity\" : 2," +
+                "\"medicalKit\" : true," +
+                "\"available\" : false," +
+                "\"person\" : false" +
+                "}" + "}" + "}";
+
+        when(processService.getProcessInstance(any(CorrelationKey.class))).thenReturn(processInstance);
+
+        messageListener.processMessage(json, "responderId", "test-topic", 1, ack);
+
+        verify(processService).signalProcessInstance(100L, "ResponderAvailable", true);
+        verify(processService).getProcessInstance(correlationKeyCaptor.capture());
+        CorrelationKey correlationKey = correlationKeyCaptor.getValue();
+        assertThat(correlationKey.getName(), equalTo("incident123"));
+        verify(ack).acknowledge();
+    }
+
+    @Test
     public void testProcessMessageWhenError() {
         String json = "{" + "\"messageType\" : \"ResponderUpdatedEvent\"," +
                 "\"id\":\"messageId\"," +
