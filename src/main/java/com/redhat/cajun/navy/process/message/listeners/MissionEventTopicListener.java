@@ -55,27 +55,27 @@ public class MissionEventTopicListener {
                                @Header(KafkaHeaders.RECEIVED_TOPIC) String topic,
                                @Header(KafkaHeaders.RECEIVED_PARTITION_ID) int partition, Acknowledgment ack) {
 
-        messageType(messageAsJson, topic, partition, ack).ifPresent(s -> {
+        messageType(messageAsJson, ack).ifPresent(s -> {
             switch (s) {
                 case TYPE_MISSION_STARTED_EVENT:
-                    processMissionStartedEvent(messageAsJson, ack);
+                    processMissionStartedEvent(messageAsJson, topic, partition, ack);
                     break;
                 case TYPE_MISSION_PICKEDUP_EVENT:
-                    processVictimPickedUpEvent(messageAsJson, ack);
+                    processVictimPickedUpEvent(messageAsJson, topic, partition, ack);
                     break;
                 case TYPE_MISSION_COMPLETED_EVENT:
-                    processVictimDeliveredEvent(messageAsJson, ack);
+                    processVictimDeliveredEvent(messageAsJson, topic, partition, ack);
                     break;
             }
         });
     }
 
-    private void processMissionStartedEvent(String messageAsJson, Acknowledgment ack) {
-
+    private void processMissionStartedEvent(String messageAsJson, String topic, int partition, Acknowledgment ack) {
         Message<MissionStartedEvent> message;
         try {
             message = new ObjectMapper().readValue(messageAsJson, new TypeReference<Message<MissionStartedEvent>>() {});
             String incidentId = message.getBody().getIncidentId();
+            log.debug("Processing '" + TYPE_MISSION_STARTED_EVENT + "' message for incident '" + incidentId + "' from topic:partition " + topic + ":" + partition);
             signalProcess(incidentId, SIGNAL_MISSION_STARTED);
             ack.acknowledge();
        } catch (Exception e) {
@@ -84,12 +84,12 @@ public class MissionEventTopicListener {
         }
     }
 
-    private void processVictimPickedUpEvent(String messageAsJson, Acknowledgment ack) {
-
+    private void processVictimPickedUpEvent(String messageAsJson, String topic, int partition, Acknowledgment ack) {
         Message<VictimPickedUpEvent> message;
         try {
             message = new ObjectMapper().readValue(messageAsJson, new TypeReference<Message<VictimPickedUpEvent>>() {});
             String incidentId = message.getBody().getIncidentId();
+            log.debug("Processing '" + TYPE_MISSION_PICKEDUP_EVENT + "' message for incident '" + incidentId + "' from topic:partition " + topic + ":" + partition);
             signalProcess(incidentId, SIGNAL_VICTIM_PICKEDUP);
             ack.acknowledge();
         } catch (Exception e) {
@@ -98,12 +98,12 @@ public class MissionEventTopicListener {
         }
     }
 
-    private void processVictimDeliveredEvent(String messageAsJson, Acknowledgment ack) {
-
+    private void processVictimDeliveredEvent(String messageAsJson, String topic, int partition, Acknowledgment ack) {
         Message<VictimDeliveredEvent> message;
         try {
             message = new ObjectMapper().readValue(messageAsJson, new TypeReference<Message<VictimDeliveredEvent>>() {});
             String incidentId = message.getBody().getIncidentId();
+            log.debug("Processing '" + TYPE_MISSION_COMPLETED_EVENT + "' message for incident '" + incidentId + "' from topic:partition " + topic + ":" + partition);
             signalProcess(incidentId, SIGNAL_VICTIM_DELIVERED);
             ack.acknowledge();
         } catch (Exception e) {
@@ -113,7 +113,6 @@ public class MissionEventTopicListener {
     }
 
     private void signalProcess(String incidentId, String signal) {
-
         if (incidentId == null || incidentId.isEmpty()) {
             log.warn("Message contains no value for incidentId. Message cannot be processed!");
             return;
@@ -130,11 +129,10 @@ public class MissionEventTopicListener {
         });
     }
 
-    private Optional<String> messageType(String messageAsJson, String topic, int partition, Acknowledgment ack) {
+    private Optional<String> messageType(String messageAsJson, Acknowledgment ack) {
         try {
             String messageType = JsonPath.read(messageAsJson, "$.messageType");
             if (Arrays.asList(ACCEPTED_MESSAGE_TYPES).contains(messageType)) {
-                log.debug("Processing '" + messageType + "' from topic:partition " + topic + ":" + partition);
                 return Optional.of(messageType);
             }
             log.debug("Message with type '" + messageType + "' is ignored");
