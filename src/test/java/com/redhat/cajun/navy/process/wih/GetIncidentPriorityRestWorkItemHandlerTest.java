@@ -62,7 +62,8 @@ public class GetIncidentPriorityRestWorkItemHandlerTest {
     @Test
     public void testWorkItemHandler() throws Exception {
 
-        String ip = "{" + "\"incidentId\": \"incident123\"," + "\"priority\": 1," + "\"average\": 2.5" + "}";
+        String ip = "{" + "\"incidentId\": \"incident123\"," + "\"priority\": 1,"
+                + "\"average\": 2.5," + "\"incidents\": 3" +"}";
 
         stubFor(get(urlEqualTo("/priority/incident123")).willReturn(
                 aResponse().withStatus(200).withHeader("Content-type", "application/json")
@@ -84,6 +85,7 @@ public class GetIncidentPriorityRestWorkItemHandlerTest {
         assertThat(incidentPriority.getIncidentId(), equalTo("incident123"));
         assertThat(incidentPriority.getPriority(), equalTo(new BigDecimal(1)));
         assertThat(incidentPriority.getAveragePriority(), equalTo(new BigDecimal(2.5)));
+        assertThat(incidentPriority.getIncidents(), equalTo(new BigDecimal(3)));
     }
 
 

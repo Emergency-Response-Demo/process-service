@@ -50,12 +50,14 @@ public class GetIncidentPriorityRestWorkItemHandler implements WorkItemHandler {
             incidentPriority.setIncidentId(ip.incidentId);
             incidentPriority.setPriority(new BigDecimal(ip.priority));
             incidentPriority.setAveragePriority(new BigDecimal(ip.average));
+            incidentPriority.setIncidents(new BigDecimal(ip.incidents));
         } catch (HttpClientErrorException e) {
             log.error("Http Exception when calling incident priority service - response code : " + e.getRawStatusCode(), e);
             incidentPriority = new IncidentPriority();
             incidentPriority.setIncidentId(incident.getId());
             incidentPriority.setPriority(new BigDecimal(0));
             incidentPriority.setAveragePriority(new BigDecimal(0));
+            incidentPriority.setIncidents(new BigDecimal(0));
         }
         Map<String, Object> results = new HashMap<>();
         results.put("IncidentPriority", incidentPriority);
@@ -75,6 +77,8 @@ public class GetIncidentPriorityRestWorkItemHandler implements WorkItemHandler {
 
         private double average;
 
+        private int incidents;
+
         public void setIncidentId(String incidentId) {
             this.incidentId = incidentId;
         }
@@ -85,6 +89,10 @@ public class GetIncidentPriorityRestWorkItemHandler implements WorkItemHandler {
 
         public void setAverage(double average) {
             this.average = average;
+        }
+
+        public void setIncidents(int incidents) {
+            this.incidents = incidents;
         }
     }
 
