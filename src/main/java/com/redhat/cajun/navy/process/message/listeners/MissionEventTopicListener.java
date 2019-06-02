@@ -11,6 +11,7 @@ import com.redhat.cajun.navy.process.message.model.MissionStartedEvent;
 import com.redhat.cajun.navy.process.message.model.VictimDeliveredEvent;
 import com.redhat.cajun.navy.process.message.model.VictimPickedUpEvent;
 import org.jbpm.services.api.ProcessService;
+import org.jbpm.services.api.query.QueryService;
 import org.kie.api.runtime.process.ProcessInstance;
 import org.kie.internal.KieInternalServices;
 import org.kie.internal.process.CorrelationKey;
@@ -46,6 +47,9 @@ public class MissionEventTopicListener {
 
     @Autowired
     private ProcessService processService;
+
+    @Autowired
+    private QueryService queryService;
 
     @Autowired
     private PlatformTransactionManager transactionManager;
@@ -112,11 +116,32 @@ public class MissionEventTopicListener {
         }
     }
 
-    private void signalProcess(String incidentId, String signal) {
+    private void signalProcess(String incidentId, String signal) throws Exception {
         if (incidentId == null || incidentId.isEmpty()) {
             log.warn("Message contains no value for incidentId. Message cannot be processed!");
             return;
         }
+        final IntegerHolder holder = new IntegerHolder(5);
+        while (holder.counting()) {
+            TransactionTemplate template = new TransactionTemplate(transactionManager);
+            template.execute((TransactionStatus s) -> {
+                // check if process is waiting on signal
+                if (!SignalsByCorrelationKeyHelper.waitingForSignal(queryService, incidentId, signal)) {
+                    log.warn("Try " + holder.getValue() + " - Process instance with correlationKey '" + incidentId + "' is not waiting for signal '" + signal + "'.");
+                    holder.add();
+                    return null;
+                }
+                holder.reset();
+                return null;
+            });
+            if (holder.limit()) {
+                log.warn("Process instance with correlationKey '" + incidentId + "' is not waiting for signal '" + signal + "'. Process instance is not signaled.");
+            } else if (holder.counting()) {
+                log.info("Sleeping for 300 ms");
+                Thread.sleep(300);
+            }
+        }
+
         CorrelationKey correlationKey = correlationKeyFactory.newCorrelationKey(incidentId);
         new TransactionTemplate(transactionManager).execute((TransactionStatus s) -> {
             ProcessInstance processInstance = processService.getProcessInstance(correlationKey);
@@ -141,5 +166,42 @@ public class MissionEventTopicListener {
         }
         ack.acknowledge();
         return Optional.empty();
+    }
+
+    public static class IntegerHolder {
+
+        private int value;
+
+        private int limit;
+
+        public IntegerHolder(int limit) {
+            value = 1;
+            this.limit = limit;
+        }
+
+        public void add() {
+            value++;
+        }
+
+        public int getValue() {
+            return value;
+        }
+
+        public void reset() {
+            value = 0;
+        }
+
+        public boolean limit() {
+            return value > limit;
+        }
+
+        public boolean counting() {
+            return value > 0 && value <= limit;
+        }
+
+        public boolean done() {
+            return value == 0;
+        }
+
     }
 }

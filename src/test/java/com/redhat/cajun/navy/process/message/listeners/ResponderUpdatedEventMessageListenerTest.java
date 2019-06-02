@@ -100,6 +100,7 @@ public class ResponderUpdatedEventMessageListenerTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void testProcessMessageWithPersonField() {
         String json = "{" + "\"messageType\" : \"ResponderUpdatedEvent\"," +
                 "\"id\":\"messageId\"," +
@@ -197,6 +198,7 @@ public class ResponderUpdatedEventMessageListenerTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     public void testProcessMessageWhenNotWaitingOnSignal() {
         String json = "{" + "\"messageType\" : \"ResponderUpdatedEvent\"," +
                 "\"id\":\"messageId\"," +
