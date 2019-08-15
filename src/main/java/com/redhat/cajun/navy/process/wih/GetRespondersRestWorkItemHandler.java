@@ -52,6 +52,7 @@ public class GetRespondersRestWorkItemHandler implements WorkItemHandler {
                 responder.setLongitude(r.getLongitude());
                 responder.setBoatCapacity(r.getBoatCapacity());
                 responder.setHasMedical(r.isMedicalKit());
+                responder.setPerson(r.isPerson());
                 return responder;
             }).collect(Collectors.toList()));
 
@@ -88,6 +89,8 @@ public class GetRespondersRestWorkItemHandler implements WorkItemHandler {
 
         private boolean available;
 
+        private boolean person;
+
         public long getId() {
             return id;
         }
@@ -120,5 +123,8 @@ public class GetRespondersRestWorkItemHandler implements WorkItemHandler {
             return available;
         }
 
+        public boolean isPerson() {
+            return person;
+        }
     }
 }
