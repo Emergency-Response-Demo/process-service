@@ -100,6 +100,7 @@ public class GetRespondersRestWorkItemHandlerTest {
             assertThat(responder.getLongitude(), equalTo(new BigDecimal("-70.98765")));
             assertThat(responder.getBoatCapacity(), equalTo(3));
             assertThat(responder.getHasMedical(), is(true));
+            assertThat(responder.getPerson(), is(false));
         } else {
             assertThat(responder.getFullname(), equalTo("John Foo"));
             assertThat(responder.getPhoneNumber(), equalTo("999-888-777"));
@@ -107,6 +108,7 @@ public class GetRespondersRestWorkItemHandlerTest {
             assertThat(responder.getLongitude(), equalTo(new BigDecimal("-75.98765")));
             assertThat(responder.getBoatCapacity(), equalTo(2));
             assertThat(responder.getHasMedical(), is(false));
+            assertThat(responder.getPerson(), is(true));
         }
     }
 
