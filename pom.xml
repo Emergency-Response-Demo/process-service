@@ -11,16 +11,20 @@
     <skipTests>false</skipTests>
     <skipITs>${skipTests}</skipITs>
     <skipUTs>${skipTests}</skipUTs>
-    <version.spring-boot>2.1.3.Final-redhat-00001</version.spring-boot>
-    <version.spring-boot-maven-plugin>2.1.3.RELEASE</version.spring-boot-maven-plugin>
+    <version.spring-boot>2.1.6.SP3-redhat-00001</version.spring-boot>
+    <version.spring-boot-maven-plugin>2.1.6.RELEASE</version.spring-boot-maven-plugin>
     <version.rhpam>7.18.0.Final-redhat-00002</version.rhpam>
     <version.fabric8-maven-plugin>3.5.41</version.fabric8-maven-plugin>
-    <version.spring-cloud-kubernetes>0.2.0.RELEASE</version.spring-cloud-kubernetes>
-    <version.narayana>5.9.0.Final</version.narayana>
-    <version.hibernate>5.3.7.Final-redhat-00001</version.hibernate>
-    <version.spring-kafka>2.2.2.RELEASE</version.spring-kafka>
+    <version.narayana>5.9.5.Final-redhat-00001</version.narayana>
+    <version.spring-kafka>2.2.8.RELEASE</version.spring-kafka>
     <version.commons-dbcp2>2.5.0</version.commons-dbcp2>
     <version.logback>1.2.3</version.logback>
+    <version.json-path>2.4.0</version.json-path>
+    <version.logstash-logback-encoder>5.1</version.logstash-logback-encoder>
+    <version.commons-lang3>3.8.1</version.commons-lang3>
+    <version.cajun-navy-rules-model>0.0.1-SNAPSHOT</version.cajun-navy-rules-model>
+    <version.incident-process>1.0.0</version.incident-process>
+    <version.wiremock>2.6.0</version.wiremock>
   </properties>
   <dependencyManagement>
     <dependencies>
@@ -76,19 +80,12 @@
       <artifactId>spring-orm</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.hibernate.javax.persistence</groupId>
-      <artifactId>hibernate-jpa-2.1-api</artifactId>
-      <version>1.0.0.Final</version>
-    </dependency>
-    <dependency>
       <groupId>org.hibernate</groupId>
       <artifactId>hibernate-entitymanager</artifactId>
-      <version>${version.hibernate}</version>
     </dependency>
     <dependency>
       <groupId>org.hibernate</groupId>
       <artifactId>hibernate-core</artifactId>
-      <version>${version.hibernate}</version>
     </dependency>
     <dependency>
       <groupId>org.kie</groupId>
@@ -112,11 +109,6 @@
       <version>${version.rhpam}</version>
     </dependency>
     <dependency>
-      <groupId>org.jboss.spec.javax.jms</groupId>
-      <artifactId>jboss-jms-api_2.0_spec</artifactId>
-      <version>1.0.1.Final-redhat-1</version>
-    </dependency>
-    <dependency>
       <groupId>org.springframework.kafka</groupId>
       <artifactId>spring-kafka</artifactId>
       <version>${version.spring-kafka}</version>
@@ -124,7 +116,7 @@
     <dependency>
       <groupId>com.jayway.jsonpath</groupId>
       <artifactId>json-path</artifactId>
-      <version>2.4.0</version>
+      <version>${version.json-path}</version>
     </dependency>
     <dependency>
       <groupId>io.micrometer</groupId>
@@ -148,22 +140,17 @@
     <dependency>
       <groupId>net.logstash.logback</groupId>
       <artifactId>logstash-logback-encoder</artifactId>
-      <version>5.1</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-lang3</artifactId>
-      <version>3.8.1</version>
+      <version>${version.logstash-logback-encoder}</version>
     </dependency>
     <dependency>
       <groupId>com.redhat.cajun.navy</groupId>
       <artifactId>cajun-navy-rules-model</artifactId>
-      <version>0.0.1-SNAPSHOT</version>
+      <version>${version.cajun-navy-rules-model}</version>
     </dependency>
     <dependency>
       <groupId>com.redhat.cajun.navy</groupId>
       <artifactId>incident-process</artifactId>
-      <version>1.0.0</version>
+      <version>${version.incident-process}</version>
     </dependency>
     <dependency>
       <groupId>com.h2database</groupId>
