@@ -4,7 +4,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.redhat.cajun.navy</groupId>
   <artifactId>process-service</artifactId>
-  <version>1.0.0-SNAPSHOT</version>
+  <version>1.0.0.Final</version>
   <properties>
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
@@ -22,9 +22,9 @@
     <version.json-path>2.4.0</version.json-path>
     <version.logstash-logback-encoder>5.1</version.logstash-logback-encoder>
     <version.commons-lang3>3.8.1</version.commons-lang3>
-    <version.cajun-navy-rules-model>1.0.0-SNAPSHOT</version.cajun-navy-rules-model>
-    <version.cajun-navy-rules>1.0.0-SNAPSHOT</version.cajun-navy-rules>
-    <version.incident-process>1.0.0-SNAPSHOT</version.incident-process>
+    <version.cajun-navy-rules-model>1.0.0.Final</version.cajun-navy-rules-model>
+    <version.cajun-navy-rules>1.0.0.Final</version.cajun-navy-rules>
+    <version.incident-process>1.0.0.Final</version.incident-process>
     <version.wiremock>2.6.0</version.wiremock>
   </properties>
   <dependencyManagement>

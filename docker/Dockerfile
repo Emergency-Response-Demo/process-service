@@ -12,4 +12,4 @@ EXPOSE 8080 8443
 
 USER 185
 
-COPY target/process-service-1.0.0-SNAPSHOT.jar /deployments/
+COPY target/process-service-1.0.0.Final.jar /deployments/
