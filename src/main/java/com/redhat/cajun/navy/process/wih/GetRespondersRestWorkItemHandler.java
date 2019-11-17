@@ -19,6 +19,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponents;
+import org.springframework.web.util.UriComponentsBuilder;
 
 @Component("ResponderService")
 public class GetRespondersRestWorkItemHandler implements WorkItemHandler {
@@ -34,6 +36,9 @@ public class GetRespondersRestWorkItemHandler implements WorkItemHandler {
     @Value("${responder.service.available-responders-path}")
     private String availableRespondersPath;
 
+    @Value("${responder.service.available-responders-limit}")
+    private Integer availableRespondersLimit;
+
 
     @Override
     public void executeWorkItem(WorkItem workItem, WorkItemManager manager) {
@@ -41,7 +46,9 @@ public class GetRespondersRestWorkItemHandler implements WorkItemHandler {
         RestTemplate restTemplate = new RestTemplate();
         Responders responders;
         try {
-            ResponseEntity<List<Responder>> entity = restTemplate.exchange(responderServiceScheme + "://" + responderServiceUrl + availableRespondersPath,
+            UriComponents uriComponents = UriComponentsBuilder.newInstance().scheme(responderServiceScheme)
+                    .host(responderServiceUrl).path(availableRespondersPath).query("limit="+availableRespondersLimit).build();
+            ResponseEntity<List<Responder>> entity = restTemplate.exchange(uriComponents.toUriString(),
                     HttpMethod.GET, null, new ParameterizedTypeReference<List<Responder>>(){});
             responders = new Responders(entity.getBody().stream().map(r -> {
                 com.redhat.cajun.navy.rules.model.Responder responder = new com.redhat.cajun.navy.rules.model.Responder();

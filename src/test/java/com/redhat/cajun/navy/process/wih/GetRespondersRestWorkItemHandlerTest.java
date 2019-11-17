@@ -17,6 +17,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
+import static org.springframework.test.util.ReflectionTestUtils.setField;
 
 import java.io.InputStream;
 import java.math.BigDecimal;
@@ -36,7 +37,6 @@ import org.kie.api.runtime.process.WorkItemManager;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-import org.springframework.test.util.ReflectionTestUtils;
 
 public class GetRespondersRestWorkItemHandlerTest {
 
@@ -58,9 +58,10 @@ public class GetRespondersRestWorkItemHandlerTest {
     public void beforeTest() {
         initMocks(this);
         wih = new GetRespondersRestWorkItemHandler();
-        ReflectionTestUtils.setField(wih, "responderServiceScheme", "http", null);
-        ReflectionTestUtils.setField(wih, "responderServiceUrl", "localhost:" + wireMockRule.port(), null);
-        ReflectionTestUtils.setField(wih, "availableRespondersPath", "/responders/available", null);
+        setField(wih, "responderServiceScheme", "http", null);
+        setField(wih, "responderServiceUrl", "localhost:" + wireMockRule.port(), null);
+        setField(wih, "availableRespondersPath", "/responders/available", null);
+        setField(wih, "availableRespondersLimit", 100, null);
         when(workItem.getId()).thenReturn(1L);
     }
 
@@ -68,12 +69,12 @@ public class GetRespondersRestWorkItemHandlerTest {
     public void testWorkItemHandler() throws Exception {
 
         InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream("response-service-response.json");
-        stubFor(get(urlEqualTo("/responders/available")).willReturn(
+        stubFor(get(urlEqualTo("/responders/available?limit=100")).willReturn(
                 aResponse().withStatus(200).withHeader("Content-type", "application/json")
                         .withBody(IOUtils.toString(is, Charset.defaultCharset()))));
 
         wih.executeWorkItem(workItem, workItemManager);
-        verify(getRequestedFor(urlEqualTo("/responders/available")));
+        verify(getRequestedFor(urlEqualTo("/responders/available?limit=100")));
         verify(workItemManager).completeWorkItem(eq(1L), resultsCaptor.capture());
         Map<String, Object> results = resultsCaptor.getValue();
         assertThat(results, notNullValue());
