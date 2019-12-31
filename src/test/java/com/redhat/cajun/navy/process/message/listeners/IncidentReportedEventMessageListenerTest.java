@@ -84,11 +84,13 @@ public class IncidentReportedEventMessageListenerTest {
                 "\"lon\": \"-77.86569\"," +
                 "\"numberOfPeople\": 3," +
                 "\"medicalNeeded\": true," +
-                "\"timestamp\": 1521148332350" +
+                "\"timestamp\": 1521148332350," +
+                "\"victimName\":\"John Doe\"," +
+                "\"victimPhoneNumber\":\"111-222-333\"," +
+                "\"status\":\"REPORTED\"" +
                 "}}";
 
         messageListener.processMessage(json, "incident123", "topic1", 1, ack);
-
 
         verify(processService).startProcess(any(), processIdCaptor.capture(), correlationKeyCaptor.capture(), parametersCaptor.capture());
         assertThat(processIdCaptor.getValue(), equalTo(processId));
