@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
 import com.redhat.cajun.navy.process.message.model.DestinationLocations;
@@ -77,7 +78,8 @@ public class IncidentReportedEventMessageListener {
         Message<IncidentReportedEvent> message;
         try {
 
-            message = new ObjectMapper().readValue(messageAsJson, new TypeReference<Message<IncidentReportedEvent>>() {});
+            message = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+                    .readValue(messageAsJson, new TypeReference<Message<IncidentReportedEvent>>() {});
 
             String incidentId = message.getBody().getId();
 
