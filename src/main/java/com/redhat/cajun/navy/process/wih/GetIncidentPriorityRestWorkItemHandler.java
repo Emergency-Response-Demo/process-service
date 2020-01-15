@@ -4,8 +4,12 @@ import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.fasterxml.jackson.core.JsonFactory;
 import com.redhat.cajun.navy.rules.model.Incident;
 import com.redhat.cajun.navy.rules.model.IncidentPriority;
+
+import org.dashbuilder.json.Json;
+import org.dashbuilder.json.JsonObject;
 import org.kie.api.runtime.process.WorkItem;
 import org.kie.api.runtime.process.WorkItemHandler;
 import org.kie.api.runtime.process.WorkItemManager;
@@ -13,6 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
@@ -43,8 +48,12 @@ public class GetIncidentPriorityRestWorkItemHandler implements WorkItemHandler {
         RestTemplate restTemplate = new RestTemplate();
         IncidentPriority incidentPriority;
         try {
+            JsonObject json = Json.createObject();
+            json.put("lat", incident.getLatitude().toString());
+            json.put("lon", incident.getLongitude().toString());
+            HttpEntity<JsonObject> request = new HttpEntity<JsonObject>(json);
             RestIncidentPriority ip = restTemplate.exchange(serviceScheme + "://" + serviceUrl + incidentPriorityPath,
-                    HttpMethod.GET, null, new ParameterizedTypeReference<RestIncidentPriority>() {}, incident.getId()).getBody();
+                    HttpMethod.POST, request, new ParameterizedTypeReference<RestIncidentPriority>() {}, incident.getId()).getBody();
             log.debug("Incident Priority for incident '" + ip.incidentId + "': Priority = " + ip.priority + ", Average = " + ip.average);
             incidentPriority = new IncidentPriority();
             incidentPriority.setIncidentId(ip.incidentId);

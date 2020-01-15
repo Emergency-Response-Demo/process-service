@@ -1,8 +1,8 @@
 package com.redhat.cajun.navy.process.wih;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
-import static com.github.tomakehurst.wiremock.client.WireMock.get;
-import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.post;
+import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.verify;
@@ -65,17 +65,20 @@ public class GetIncidentPriorityRestWorkItemHandlerTest {
         String ip = "{" + "\"incidentId\": \"incident123\"," + "\"priority\": 1,"
                 + "\"average\": 2.5," + "\"incidents\": 3" +"}";
 
-        stubFor(get(urlEqualTo("/priority/incident123")).willReturn(
+        stubFor(post(urlEqualTo("/priority/incident123")).willReturn(
                 aResponse().withStatus(200).withHeader("Content-type", "application/json")
                         .withBody(ip)));
 
+
         Incident incident = new Incident();
         incident.setId("incident123");
+        incident.setLatitude(BigDecimal.ZERO);
+        incident.setLongitude(BigDecimal.ZERO);
 
         when(workItem.getParameter("Incident")).thenReturn(incident);
 
         wih.executeWorkItem(workItem, workItemManager);
-        verify(getRequestedFor(urlEqualTo("/priority/incident123")));
+        verify(postRequestedFor(urlEqualTo("/priority/incident123")));
         Mockito.verify(workItemManager).completeWorkItem(eq(1L), resultsCaptor.capture());
         Map<String, Object> results = resultsCaptor.getValue();
         assertThat(results, notNullValue());
