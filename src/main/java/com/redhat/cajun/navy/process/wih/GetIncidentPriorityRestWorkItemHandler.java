@@ -4,7 +4,7 @@ import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.redhat.cajun.navy.process.message.model.Incident.IncidentStatus;
+import com.fasterxml.jackson.core.JsonFactory;
 import com.redhat.cajun.navy.rules.model.Incident;
 import com.redhat.cajun.navy.rules.model.IncidentPriority;
 
@@ -51,7 +51,6 @@ public class GetIncidentPriorityRestWorkItemHandler implements WorkItemHandler {
             JsonObject json = Json.createObject();
             json.put("lat", incident.getLatitude().toString());
             json.put("lon", incident.getLongitude().toString());
-            json.put("active", incident.getStatus() == null || incident.getStatus().equals(IncidentStatus.REPORTED.name()));
             HttpEntity<JsonObject> request = new HttpEntity<JsonObject>(json);
             RestIncidentPriority ip = restTemplate.exchange(serviceScheme + "://" + serviceUrl + incidentPriorityPath,
                     HttpMethod.POST, request, new ParameterizedTypeReference<RestIncidentPriority>() {}, incident.getId()).getBody();
