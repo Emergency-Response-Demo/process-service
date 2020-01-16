@@ -19,6 +19,7 @@ import java.math.BigDecimal;
 import java.util.Map;
 
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
+import com.redhat.cajun.navy.process.message.model.Incident.IncidentStatus;
 import com.redhat.cajun.navy.rules.model.Incident;
 import com.redhat.cajun.navy.rules.model.IncidentPriority;
 import org.junit.Before;
@@ -74,6 +75,7 @@ public class GetIncidentPriorityRestWorkItemHandlerTest {
         incident.setId("incident123");
         incident.setLatitude(BigDecimal.ZERO);
         incident.setLongitude(BigDecimal.ZERO);
+        incident.setStatus(IncidentStatus.REPORTED.name());
 
         when(workItem.getParameter("Incident")).thenReturn(incident);
 
