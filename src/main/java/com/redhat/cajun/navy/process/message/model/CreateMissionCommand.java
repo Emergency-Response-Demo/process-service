@@ -21,6 +21,8 @@ public class CreateMissionCommand {
 
     private String destinationLong;
 
+    private String processId;
+
     public String getIncidentId() {
         return incidentId;
     }
@@ -51,6 +53,10 @@ public class CreateMissionCommand {
 
     public String getDestinationLong() {
         return destinationLong;
+    }
+
+    public String getProcessId() {
+        return processId;
     }
 
     public static class Builder {
@@ -98,6 +104,11 @@ public class CreateMissionCommand {
 
         public Builder destinationLong(String destinationLong) {
             command.destinationLong = destinationLong;
+            return this;
+        }
+
+        public Builder processId(String processId) {
+            command.processId = processId;
             return this;
         }
 

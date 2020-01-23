@@ -52,11 +52,16 @@ public class KafkaMessageSenderWorkItemHandler implements WorkItemHandler {
         if (!(messageType instanceof String)) {
             throw new IllegalStateException("Parameter 'messageType' cannot be null and must be of type String");
         }
-        Triple<String, String, BiFunction<String, Map<String, Object>, Pair<String, Message<?>>>> messagetypeDestinationBuilderTuple = payloadBuilders.get(messageType);
+        Triple<String, String, BiFunction<String, Map<String, Object>, Pair<String, Message<?>>>> messagetypeDestinationBuilderTuple = payloadBuilders
+                .get(messageType);
         if (messagetypeDestinationBuilderTuple == null) {
             throw new IllegalStateException("No builder found for payload '" + messageType + "'");
         }
-        Pair<String, Message<?>> keyAndMessagePair = messagetypeDestinationBuilderTuple.getRight().apply(messagetypeDestinationBuilderTuple.getLeft(), parameters);
+
+        parameters.put("processId", Long.toString(workItem.getProcessInstanceId()));
+
+        Pair<String, Message<?>> keyAndMessagePair = messagetypeDestinationBuilderTuple.getRight()
+                .apply(messagetypeDestinationBuilderTuple.getLeft(), parameters);
 
         send(messagetypeDestinationBuilderTuple.getMiddle(), keyAndMessagePair.getLeft(), keyAndMessagePair.getRight());
         manager.completeWorkItem(workItem.getId(), Collections.emptyMap());
@@ -65,7 +70,8 @@ public class KafkaMessageSenderWorkItemHandler implements WorkItemHandler {
     private void send(String destination, String key, Message<?> msg) {
         ListenableFuture<SendResult<String, Message<?>>> future = kafkaTemplate.send(destination, key, msg);
         future.addCallback(
-                result -> log.debug("Sent '" + msg.getMessageType() + "' message with key " + key + " to topic " + destination),
+                result -> log.debug(
+                        "Sent '" + msg.getMessageType() + "' message with key " + key + " to topic " + destination),
                 ex -> log.error("Error sending '" + msg.getMessageType() + "' message with key " + key, ex));
     }
 
@@ -76,13 +82,18 @@ public class KafkaMessageSenderWorkItemHandler implements WorkItemHandler {
 
     @PostConstruct
     public void init() {
-        addPayloadBuilder("CreateMission", "CreateMissionCommand", createMissionCommandDestination, CreateMissionCommandBuilder::builder);
-        addPayloadBuilder("SetResponderUnavailable", "UpdateResponderCommand", updateResponderCommandDestination, SetResponderUnavailableCommandBuilder::builder);
-        addPayloadBuilder("UpdateIncident", "UpdateIncidentCommand", updateIncidentCommandDestination, UpdateIncidentCommandBuilder::builder);
-        addPayloadBuilder("IncidentAssignment", "IncidentAssignmentEvent", incidentAssignmentEventDestination, IncidentAssignmentEventBuilder::builder);
+        addPayloadBuilder("CreateMission", "CreateMissionCommand", createMissionCommandDestination,
+                CreateMissionCommandBuilder::builder);
+        addPayloadBuilder("SetResponderUnavailable", "UpdateResponderCommand", updateResponderCommandDestination,
+                SetResponderUnavailableCommandBuilder::builder);
+        addPayloadBuilder("UpdateIncident", "UpdateIncidentCommand", updateIncidentCommandDestination,
+                UpdateIncidentCommandBuilder::builder);
+        addPayloadBuilder("IncidentAssignment", "IncidentAssignmentEvent", incidentAssignmentEventDestination,
+                IncidentAssignmentEventBuilder::builder);
     }
 
-    void addPayloadBuilder(String payloadType, String messageType, String destination, BiFunction<String, Map<String, Object>, Pair<String, Message<?>>> builder) {
+    void addPayloadBuilder(String payloadType, String messageType, String destination,
+            BiFunction<String, Map<String, Object>, Pair<String, Message<?>>> builder) {
         payloadBuilders.put(payloadType, new ImmutableTriple<>(messageType, destination, builder));
     }
 }
