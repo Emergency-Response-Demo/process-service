@@ -45,12 +45,14 @@ public class GetIncidentPriorityRestWorkItemHandler implements WorkItemHandler {
         try {
             RestIncidentPriority ip = restTemplate.exchange(serviceScheme + "://" + serviceUrl + incidentPriorityPath,
                     HttpMethod.GET, null, new ParameterizedTypeReference<RestIncidentPriority>() {}, incident.getId()).getBody();
-            log.debug("Incident Priority for incident '" + ip.incidentId + "': Priority = " + ip.priority + ", Average = " + ip.average);
+            log.debug("Incident Priority for incident '" + ip.incidentId + "': Priority = " + ip.priority + ", Average = " + ip.average + ", Escalated = " + ip.escalated);
             incidentPriority = new IncidentPriority();
             incidentPriority.setIncidentId(ip.incidentId);
             incidentPriority.setPriority(new BigDecimal(ip.priority));
             incidentPriority.setAveragePriority(new BigDecimal(ip.average));
             incidentPriority.setIncidents(new BigDecimal(ip.incidents));
+            incidentPriority.setEscalated(ip.escalated);
+            incidentPriority.setEscalatedIncidents(new BigDecimal(ip.escalatedIncidents));
         } catch (HttpClientErrorException e) {
             log.error("Http Exception when calling incident priority service - response code : " + e.getRawStatusCode(), e);
             incidentPriority = new IncidentPriority();
@@ -79,6 +81,14 @@ public class GetIncidentPriorityRestWorkItemHandler implements WorkItemHandler {
 
         private int incidents;
 
+        private boolean escalated;
+
+        private int escalatedIncidents;
+
+        public void setEscalated(boolean escalated) {
+            this.escalated = escalated;
+        }
+
         public void setIncidentId(String incidentId) {
             this.incidentId = incidentId;
         }
@@ -93,6 +103,10 @@ public class GetIncidentPriorityRestWorkItemHandler implements WorkItemHandler {
 
         public void setIncidents(int incidents) {
             this.incidents = incidents;
+        }
+
+        public void setEscalatedIncidents(int escalatedIncidents) {
+            this.escalatedIncidents = escalatedIncidents;
         }
     }
 

@@ -17,7 +17,7 @@ public class IncidentAssignmentEventBuilder {
             throw new IllegalStateException("Parameter 'payload' cannot be null and must be of type com.redhat.cajun.navy.rules.model.Mission");
         }
         Mission mission = (Mission) payload;
-        IncidentAssignmentEvent event = new IncidentAssignmentEvent.Builder(mission.getIncidentId(), "ASSIGNED".equals(mission.getStatus().name())).build();
+        IncidentAssignmentEvent event = new IncidentAssignmentEvent.Builder(mission.getIncidentId(), "ASSIGNED".equals(mission.getStatus().name()), mission.getIncidentLat().toString(), mission.getIncidentLong().toString()).build();
         return new ImmutablePair<>(mission.getIncidentId(), new Message.Builder<>(messageType, "IncidentProcessService", event).build());
     }
 
