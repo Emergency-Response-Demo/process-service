@@ -58,9 +58,6 @@ public class IncidentReportedEventMessageListener {
     @Value("${incident.process.assignment-delay}")
     private String assignmentDelay;
 
-    @Autowired
-    private DestinationLocations destinationLocations;
-
     @KafkaListener(topics = "${listener.destination.incident-reported-event}")
     public void processMessage(@Payload String messageAsJson, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key,
                                @Header(KafkaHeaders.RECEIVED_TOPIC) String topic,
@@ -91,19 +88,8 @@ public class IncidentReportedEventMessageListener {
             incident.setMedicalNeeded(message.getBody().isMedicalNeeded());
             incident.setReportedTime(message.getBody().getTimestamp());
 
-            List<Destination> destinationList = destinationLocations.getLocations().stream().map(location -> {
-                Destination destination = new Destination();
-                destination.setName(location.getName());
-                destination.setLatitude(new BigDecimal(location.getLatitude()));
-                destination.setLongitude(new BigDecimal(location.getLongitude()));
-                return destination;
-            }).collect(Collectors.toList());
-
-            Destinations destinations = new Destinations(destinationList);
-
             Map<String, Object> parameters = new HashMap<>();
             parameters.put("incident", incident);
-            parameters.put("destinations", destinations);
             parameters.put("assignmentDelay", assignmentDelay);
 
             CorrelationKey correlationKey = correlationKeyFactory.newCorrelationKey(incidentId);
