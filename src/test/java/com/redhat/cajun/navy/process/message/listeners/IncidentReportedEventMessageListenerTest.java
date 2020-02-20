@@ -1,5 +1,12 @@
 package com.redhat.cajun.navy.process.message.listeners;
 
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+import static com.github.tomakehurst.wiremock.client.WireMock.get;
+import static com.github.tomakehurst.wiremock.client.WireMock.getRequestedFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
+import static com.github.tomakehurst.wiremock.client.WireMock.verify;
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -8,19 +15,29 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 import static org.springframework.test.util.ReflectionTestUtils.setField;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.hamcrest.CoreMatchers.is;
 
+import java.io.InputStream;
 import java.math.BigDecimal;
+import java.nio.charset.Charset;
 import java.util.Map;
 
-import com.redhat.cajun.navy.process.message.model.DestinationLocations;
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
+import com.redhat.cajun.navy.process.wih.GetSheltersRestWorkItemHandler;
 import com.redhat.cajun.navy.rules.model.Destination;
 import com.redhat.cajun.navy.rules.model.Destinations;
 import com.redhat.cajun.navy.rules.model.Incident;
+
+import org.apache.commons.io.IOUtils;
 import org.hamcrest.CoreMatchers;
 import org.jbpm.process.instance.ProcessInstance;
 import org.jbpm.services.api.ProcessService;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.kie.api.runtime.process.WorkItem;
+import org.kie.api.runtime.process.WorkItemManager;
 import org.kie.internal.process.CorrelationKey;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -32,6 +49,15 @@ import org.springframework.transaction.TransactionStatus;
 public class IncidentReportedEventMessageListenerTest {
 
     private IncidentReportedEventMessageListener messageListener;
+
+    @Rule
+    public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().dynamicPort());
+
+    @Mock
+    private WorkItem workItem;
+
+    @Mock
+    private WorkItemManager workItemManager;
 
     @Mock
     private PlatformTransactionManager ptm;
@@ -55,7 +81,12 @@ public class IncidentReportedEventMessageListenerTest {
     private ArgumentCaptor<CorrelationKey> correlationKeyCaptor;
 
     @Captor
+    private ArgumentCaptor<Map<String, Object>> resultsCaptor;
+
+    @Captor
     private ArgumentCaptor<Map<String, Object>> parametersCaptor;
+
+    private GetSheltersRestWorkItemHandler wih;
 
     private String processId = "incident";
 
@@ -66,15 +97,24 @@ public class IncidentReportedEventMessageListenerTest {
         setField(messageListener, null, ptm, PlatformTransactionManager.class);
         setField(messageListener, null, processService, ProcessService.class);
         setField(messageListener, "processId", processId, String.class);
-        setField(messageListener, "destinationLocations", destinationLocations(), DestinationLocations.class);
         setField(messageListener, "assignmentDelay", "PT30S", String.class);
+
+        wih = new GetSheltersRestWorkItemHandler();
+        setField(wih, "disasterServiceScheme", "http", null);
+        setField(wih, "disasterServiceUrl", "localhost:" + wireMockRule.port(), null);
+        setField(wih, "sheltersPath", "/shelters", null);
+
         when(ptm.getTransaction(any())).thenReturn(transactionStatus);
         when(processService.startProcess(any(), any(), any(), any())).thenReturn(100L);
-
     }
 
     @Test
-    public void testProcessIncidentReportedEventMessage() {
+    public void testProcessIncidentReportedEventMessage() throws Exception {
+        InputStream is = Thread.currentThread().getContextClassLoader().getResourceAsStream("disaster-service-response.json");
+        stubFor(get(urlEqualTo("/shelters")).willReturn(
+                aResponse().withStatus(200).withHeader("Content-type", "application/json")
+                        .withBody(IOUtils.toString(is, Charset.defaultCharset()))));
+
         String json = "{\"messageType\":\"IncidentReportedEvent\"," +
                 "\"id\":\"messageId\"," +
                 "\"invokingService\":\"messageSender\"," +
@@ -91,13 +131,13 @@ public class IncidentReportedEventMessageListenerTest {
                 "}}";
 
         messageListener.processMessage(json, "incident123", "topic1", 1, ack);
-
+        
         verify(processService).startProcess(any(), processIdCaptor.capture(), correlationKeyCaptor.capture(), parametersCaptor.capture());
         assertThat(processIdCaptor.getValue(), equalTo(processId));
         CorrelationKey correlationKey = correlationKeyCaptor.getValue();
         assertThat(correlationKey.getName(), equalTo("incident123"));
         Map<String, Object> parameters = parametersCaptor.getValue();
-        assertThat(parameters.size(), equalTo(3));
+        assertThat(parameters.size(), equalTo(2));
         assertThat(parameters.get("assignmentDelay"), equalTo("PT30S"));
         assertThat(parameters.get("incident"), notNullValue());
         assertThat(parameters.get("incident") instanceof Incident, CoreMatchers.equalTo(true));
@@ -108,33 +148,30 @@ public class IncidentReportedEventMessageListenerTest {
         assertThat(incident.getNumPeople(), equalTo(3));
         assertThat(incident.getMedicalNeeded(), equalTo(true));
         assertThat(incident.getReportedTime(), equalTo(1521148332350l));
-        Destinations destinations = (Destinations) parameters.get("destinations");
+
+        wih.executeWorkItem(workItem, workItemManager);
+        verify(getRequestedFor(urlEqualTo("/shelters")));
+        verify(workItemManager).completeWorkItem(eq(0L), resultsCaptor.capture());
+        Map<String, Object> results = resultsCaptor.getValue();
+        assertThat(results, notNullValue());
+        assertThat(results.get("destinations"), notNullValue());
+        assertThat(results.get("destinations") instanceof Destinations, is(true));
+        Destinations destinations = (Destinations) results.get("destinations");
         assertThat(destinations, notNullValue());
-        assertThat(destinations.getDestinations().size(), equalTo(2));
+        assertThat(destinations.getDestinations().size(), equalTo(3));
         Destination destination1 = destinations.getDestinations().get(0);
-        assertThat(destination1.getName(), equalTo("loc1"));
-        assertThat(destination1.getLatitude(), equalTo(new BigDecimal("20.12345")));
-        assertThat(destination1.getLongitude(), equalTo(new BigDecimal("-50.98765")));
+        assertThat(destination1.getName(), equalTo("Port City Marina"));
+        assertThat(destination1.getLatitude(), equalTo(new BigDecimal("34.24609")));
+        assertThat(destination1.getLongitude(), equalTo(new BigDecimal("-77.95189")));
         Destination destination2 = destinations.getDestinations().get(1);
-        assertThat(destination2.getName(), equalTo("loc2"));
-        assertThat(destination2.getLatitude(), equalTo(new BigDecimal("30.12345")));
-        assertThat(destination2.getLongitude(), equalTo(new BigDecimal("-60.98765")));
+        assertThat(destination2.getName(), equalTo("Wilmington Marine Center"));
+        assertThat(destination2.getLatitude(), equalTo(new BigDecimal("34.17060")));
+        assertThat(destination2.getLongitude(), equalTo(new BigDecimal("-77.94899")));
+        Destination destination3 = destinations.getDestinations().get(2);
+        assertThat(destination3.getName(), equalTo("Carolina Beach Yacht Club"));
+        assertThat(destination3.getLatitude(), equalTo(new BigDecimal("34.05830")));
+        assertThat(destination3.getLongitude(), equalTo(new BigDecimal("-77.88849")));
 
         verify(ack).acknowledge();
-    }
-
-    private DestinationLocations destinationLocations() {
-        DestinationLocations dl = new DestinationLocations();
-        DestinationLocations.Location loc1 = new DestinationLocations.Location();
-        loc1.setName("loc1");
-        loc1.setLatitude("20.12345");
-        loc1.setLongitude("-50.98765");
-        dl.getLocations().add(loc1);
-        DestinationLocations.Location loc2 = new DestinationLocations.Location();
-        loc2.setName("loc2");
-        loc2.setLatitude("30.12345");
-        loc2.setLongitude("-60.98765");
-        dl.getLocations().add(loc2);
-        return dl;
     }
 }
