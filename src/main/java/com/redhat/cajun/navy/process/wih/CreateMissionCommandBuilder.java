@@ -16,6 +16,10 @@ public class CreateMissionCommandBuilder {
         if (!(payload instanceof Mission)) {
             throw new IllegalStateException("Parameter 'payload' cannot be null and must be of type com.redhat.cajun.navy.rules.model.Mission");
         }
+        Object processId = parameters.get("processId");
+        if (processId == null || ((String)processId).equals("")) {
+            throw new IllegalStateException("Parameter 'processId' cannot be null and must be of type String");
+        }
         Mission mission = (Mission)payload;
         CreateMissionCommand command = new CreateMissionCommand.Builder()
                 .incidentId(mission.getIncidentId())
@@ -26,6 +30,7 @@ public class CreateMissionCommandBuilder {
                 .responderStartLong(mission.getResponderStartLong().toString())
                 .destinationLat(mission.getDestinationLat().toString())
                 .destinationLong(mission.getDestinationLong().toString())
+                .processId((String)processId)
                 .build();
         return new ImmutablePair<>(mission.getIncidentId(), new Message.Builder<>(messageType, "IncidentProcessService", command).build());
     }
