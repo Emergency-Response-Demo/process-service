@@ -1,15 +1,12 @@
-FROM quay.io/emergencyresponsedemo/openjdk18-openshift:1.8
+FROM quay.io/btison/ubi8-java8-mvn
 
-USER 0
+USER root
 
-COPY target/repository /home/jboss/.m2/repository
-RUN chown -R jboss:0 /home/jboss/.m2
-RUN chmod -R 776 /home/jboss/.m2
+COPY target/repository /m2/repository
 
-ENV JAVA_APP_DIR=/deployments
+RUN chown -R 1001:0 /m2/repository \
+  && chmod -R 776 /m2/repository
 
-EXPOSE 8080 8443
+USER 1001
 
-USER 185
-
-COPY target/process-service-1.1.0-SNAPSHOT.jar /deployments/
+COPY target/process-service-1.1.0-SNAPSHOT.jar /deployments/app.jar
