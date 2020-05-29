@@ -3,6 +3,7 @@ package com.redhat.cajun.navy.process;
 import java.util.Collection;
 
 import org.jbpm.kie.services.impl.CustomIdKModuleDeploymentUnit;
+import org.jbpm.process.audit.variable.ProcessIndexerManager;
 import org.jbpm.services.api.DeploymentService;
 import org.jbpm.services.api.RuntimeDataService;
 import org.jbpm.services.api.model.ProcessDefinition;
@@ -34,6 +35,8 @@ public class KjarDeployer implements InitializingBean {
 
     @Override
     public void afterPropertiesSet() throws Exception {
+        ProcessIndexerManager.get();
+
         CustomIdKModuleDeploymentUnit unit = new CustomIdKModuleDeploymentUnit(deploymentId, "com.redhat.cajun.navy", "process-service", "1.0");
 
         unit.setStrategy(RuntimeStrategy.PER_REQUEST);
