@@ -11,9 +11,9 @@
     <skipTests>false</skipTests>
     <skipITs>${skipTests}</skipITs>
     <skipUTs>${skipTests}</skipUTs>
-    <version.spring-boot>2.1.6.SP3-redhat-00001</version.spring-boot>
-    <version.spring-boot-maven-plugin>2.1.6.RELEASE</version.spring-boot-maven-plugin>
-    <version.rhpam>7.18.0.Final-redhat-00002</version.rhpam>
+    <version.spring-boot>2.1.13.Final-redhat-00001</version.spring-boot>
+    <version.spring-boot-maven-plugin>2.1.13.RELEASE</version.spring-boot-maven-plugin>
+    <version.rhpam>7.33.0.Final-redhat-00002</version.rhpam>
     <version.fabric8-maven-plugin>3.5.41</version.fabric8-maven-plugin>
     <version.narayana>5.9.5.Final-redhat-00001</version.narayana>
     <version.spring-kafka>2.2.8.RELEASE</version.spring-kafka>
