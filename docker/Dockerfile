@@ -1,4 +1,4 @@
-FROM quay.io/btison/openjdk18-openshift:1.6
+FROM quay.io/emergencyresponsedemo/openjdk18-openshift:1.8
 
 USER 0
 
