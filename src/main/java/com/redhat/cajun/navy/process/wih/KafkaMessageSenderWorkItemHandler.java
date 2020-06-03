@@ -6,6 +6,10 @@ import java.util.Map;
 import java.util.function.BiFunction;
 import javax.annotation.PostConstruct;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.redhat.cajun.navy.process.entity.OutboxEvent;
+import com.redhat.cajun.navy.process.entity.OutboxEventEmitter;
 import com.redhat.cajun.navy.process.message.model.Message;
 import org.apache.commons.lang3.tuple.ImmutableTriple;
 import org.apache.commons.lang3.tuple.Pair;
@@ -29,6 +33,9 @@ public class KafkaMessageSenderWorkItemHandler implements WorkItemHandler {
 
     @Autowired
     private KafkaTemplate<String, Message<?>> kafkaTemplate;
+
+    @Autowired
+    private OutboxEventEmitter outboxEventEmmitter;
 
     @Value("${sender.destination.create-mission-command}")
     private String createMissionCommandDestination;
@@ -68,11 +75,21 @@ public class KafkaMessageSenderWorkItemHandler implements WorkItemHandler {
     }
 
     private void send(String destination, String key, Message<?> msg) {
-        ListenableFuture<SendResult<String, Message<?>>> future = kafkaTemplate.send(destination, key, msg);
-        future.addCallback(
-                result -> log.debug(
-                        "Sent '" + msg.getMessageType() + "' message with key " + key + " to topic " + destination),
-                ex -> log.error("Error sending '" + msg.getMessageType() + "' message with key " + key, ex));
+        if (updateResponderCommandDestination.equals(destination)) {
+            OutboxEvent outboxEvent = null;
+            try {
+                outboxEvent = new OutboxEvent("responder-command", key, msg.getMessageType(), new ObjectMapper().writeValueAsString(msg));
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException(e);
+            }
+            outboxEventEmmitter.emitEvent(outboxEvent);
+        } else {
+            ListenableFuture<SendResult<String, Message<?>>> future = kafkaTemplate.send(destination, key, msg);
+            future.addCallback(
+                    result -> log.debug(
+                            "Sent '" + msg.getMessageType() + "' message with key " + key + " to topic " + destination),
+                    ex -> log.error("Error sending '" + msg.getMessageType() + "' message with key " + key, ex));
+        }
     }
 
     @Override
