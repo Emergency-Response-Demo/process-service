@@ -17,6 +17,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.redhat.cajun.navy.process.entity.OutboxEvent;
+import com.redhat.cajun.navy.process.entity.OutboxEventEmitter;
 import com.redhat.cajun.navy.process.message.model.CreateMissionCommand;
 import com.redhat.cajun.navy.process.message.model.IncidentAssignmentEvent;
 import com.redhat.cajun.navy.process.message.model.Message;
@@ -50,8 +55,14 @@ public class KafkaMessageSenderWorkItemHandlerTest {
     @Mock
     private WorkItemManager workItemManager;
 
+    @Mock
+    private OutboxEventEmitter outboxEventEmitter;
+
     @Captor
     private ArgumentCaptor<Message<?>> messageCaptor;
+
+    @Captor
+    private ArgumentCaptor<OutboxEvent> outboxEventCaptor;
 
     private KafkaMessageSenderWorkItemHandler wih;
 
@@ -64,6 +75,7 @@ public class KafkaMessageSenderWorkItemHandlerTest {
         setField(wih, "updateResponderCommandDestination", "topic-responder-command", String.class);
         setField(wih, "updateIncidentCommandDestination", "topic-incident-command", String.class);
         setField(wih, "incidentAssignmentEventDestination", "topic-incident-event", String.class);
+        setField(wih, null, outboxEventEmitter, OutboxEventEmitter.class);
         wih.init();
     }
 
@@ -126,7 +138,7 @@ public class KafkaMessageSenderWorkItemHandlerTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    public void testSetResponderUnavailableMessageType() {
+    public void testSetResponderUnavailableMessageType() throws Exception {
         Mission mission = new Mission();
         mission.setIncidentId("incident123");
         mission.setIncidentLat(new BigDecimal("30.12345"));
@@ -143,13 +155,17 @@ public class KafkaMessageSenderWorkItemHandlerTest {
         when(workItem.getParameters()).thenReturn(parameters);
         when(workItem.getId()).thenReturn(1L);
 
-        when(kafkaTemplate.send(any(String.class), any(String.class), any(Message.class))).thenReturn(new SettableListenableFuture<>());
-
         wih.executeWorkItem(workItem, workItemManager);
         verify(workItemManager).completeWorkItem(eq(1L), anyMap());
-        verify(kafkaTemplate).send(eq("topic-responder-command"), eq("responder123"), messageCaptor.capture());
+        verify(outboxEventEmitter).emitEvent(outboxEventCaptor.capture());
 
-        Message<UpdateResponderCommand> message = (Message<UpdateResponderCommand>) messageCaptor.getValue();
+        OutboxEvent outboxEvent = outboxEventCaptor.getValue();
+        assertThat(outboxEvent.getAggregateType(), equalTo("responder-command"));
+        assertThat(outboxEvent.getAggregateId(), equalTo("responder123"));
+        assertThat(outboxEvent.getType(), equalTo("UpdateResponderCommand"));
+        String messageAsJson = outboxEvent.getPayload();
+        Message<UpdateResponderCommand> message = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+                .readValue(messageAsJson, new TypeReference<Message<UpdateResponderCommand>>() {});
         assertThat(message.getMessageType(), equalTo("UpdateResponderCommand"));
         assertThat(message.getInvokingService(), equalTo("IncidentProcessService"));
         assertThat(message.getHeaderValue("incidentId"), equalTo("incident123"));
