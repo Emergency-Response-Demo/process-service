@@ -5,7 +5,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
@@ -193,40 +192,6 @@ public class ResponderUpdatedEventMessageListenerTest {
 
         verify(processService, never()).signalProcessInstance(any(), any(), any());
         verify(processService, never()).getProcessInstance(any(CorrelationKey.class));
-
-        verify(ack).acknowledge();
-    }
-
-    @Test
-    @SuppressWarnings("unchecked")
-    public void testProcessMessageWhenNotWaitingOnSignal() {
-        String json = "{" + "\"messageType\" : \"ResponderUpdatedEvent\"," +
-                "\"id\":\"messageId\"," +
-                "\"invokingService\":\"messageSender\"," +
-                "\"timestamp\":1521148332397," +
-                "\"header\" : {\"incidentId\" : \"incident123\"}," +
-                "\"body\" : {" +
-                "\"status\" : \"error\"," +
-                "\"responder\" : {" +
-                "\"id\" : \"responderId\"," +
-                "\"name\" : \"John Doe\"," +
-                "\"phoneNumber\" : \"111-222-333\"," +
-                "\"latitude\" : 30.12345," +
-                "\"longitude\" : -70.12345," +
-                "\"boatCapacity\" : 2," +
-                "\"medicalKit\" : true," +
-                "\"available\" : false" +
-                "}" + "}" + "}";
-
-        when(processService.getProcessInstance(any(CorrelationKey.class))).thenReturn(null);
-        when(queryService.query(anyString(), any(QueryResultMapper.class), any(QueryContext.class), any(QueryParam.class)))
-                .thenReturn(Collections.emptyList());
-
-        messageListener.processMessage(json, "responderId", "test-topic", 1, ack);
-
-        verify(processService, never()).signalProcessInstance(any(), any(), any());
-        verify(queryService, times(5))
-                .query(anyString(), any(QueryResultMapper.class), any(QueryContext.class), any(QueryParam.class));
 
         verify(ack).acknowledge();
     }
