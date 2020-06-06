@@ -11,13 +11,13 @@
     <skipTests>false</skipTests>
     <skipITs>${skipTests}</skipITs>
     <skipUTs>${skipTests}</skipUTs>
-    <version.spring-boot>2.1.6.SP3-redhat-00001</version.spring-boot>
-    <version.spring-boot-maven-plugin>2.1.6.RELEASE</version.spring-boot-maven-plugin>
-    <version.rhpam>7.18.0.Final-redhat-00002</version.rhpam>
+    <version.spring-boot>2.2.6.Final-redhat-00001</version.spring-boot>
+    <version.spring-boot-maven-plugin>2.2.6.RELEASE</version.spring-boot-maven-plugin>
+    <version.rhpam>7.33.0.Final-redhat-00002</version.rhpam>
     <version.fabric8-maven-plugin>3.5.41</version.fabric8-maven-plugin>
-    <version.narayana>5.9.5.Final-redhat-00001</version.narayana>
-    <version.spring-kafka>2.2.8.RELEASE</version.spring-kafka>
-    <version.commons-dbcp2>2.5.0</version.commons-dbcp2>
+    <version.narayana>5.9.8.Final-redhat-00002</version.narayana>
+    <version.spring-kafka>2.3.7.RELEASE</version.spring-kafka>
+    <version.commons-dbcp2>2.7.0</version.commons-dbcp2>
     <version.logback>1.2.3</version.logback>
     <version.json-path>2.4.0</version.json-path>
     <version.logstash-logback-encoder>5.1</version.logstash-logback-encoder>
@@ -30,8 +30,8 @@
   <dependencyManagement>
     <dependencies>
       <dependency>
-        <groupId>me.snowdrop</groupId>
-        <artifactId>spring-boot-bom</artifactId>
+        <groupId>dev.snowdrop</groupId>
+        <artifactId>snowdrop-dependencies</artifactId>
         <version>${version.spring-boot}</version>
         <type>pom</type>
         <scope>import</scope>
