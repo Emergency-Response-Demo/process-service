@@ -73,34 +73,14 @@ public class ResponderUpdatedEventMessageListener {
             Boolean available = "success".equals(message.getBody().getStatus());
 
             log.debug("Signaling process with correlationkey '" + correlationKey + ". Responder '" + key + "', available '" + available + "'." );
-            final IntegerHolder holder = new IntegerHolder(5);
-            while (holder.counting()) {
-                TransactionTemplate template = new TransactionTemplate(transactionManager);
-                template.execute((TransactionStatus s) -> {
-                    // check if process is waiting on 'ResponderAvailable' signal
-                    if (!SignalsByCorrelationKeyHelper.waitingForSignal(queryService, incidentId, "ResponderAvailable")) {
-                        log.warn("Try " + holder.getValue() + " - Process instance with correlationKey '" + incidentId + "' is not waiting for signal 'ResponderAvailable'.");
-                        holder.add();
-                        return null;
-                    }
-                    holder.reset();
-                    return null;
-                });
-                if (holder.limit()) {
-                    log.warn("Process instance with correlationKey '" + incidentId + "' is not waiting for signal 'ResponderAvailable'. Process instance is not signaled.");
-                } else if (holder.counting()) {
-                    log.info("Sleeping for 300 ms");
-                    Thread.sleep(300);
-                }
-            }
-            if (holder.done()) {
-                TransactionTemplate template = new TransactionTemplate(transactionManager);
-                template.execute((TransactionStatus s) -> {
-                    ProcessInstance instance = processService.getProcessInstance(correlationKey);
-                    processService.signalProcessInstance(instance.getId(), SIGNAL_RESPONDER_AVAILABLE, available);
-                    return null;
-                });
-            }
+
+            TransactionTemplate template = new TransactionTemplate(transactionManager);
+            template.execute((TransactionStatus s) -> {
+                ProcessInstance instance = processService.getProcessInstance(correlationKey);
+                processService.signalProcessInstance(instance.getId(), SIGNAL_RESPONDER_AVAILABLE, available);
+                return null;
+            });
+
             ack.acknowledge();
         } catch (Exception e) {
             log.error("Error processing msg " + messageAsJson, e);
