@@ -211,6 +211,8 @@
           </execution>
         </executions>
       </plugin>
+
+      <!-- Purpose of this plugin is to copy needed dependencies to a /home/jboss/.m2/repository directory of linux container image -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
