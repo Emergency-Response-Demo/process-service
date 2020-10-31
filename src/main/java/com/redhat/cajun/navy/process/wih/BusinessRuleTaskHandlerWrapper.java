@@ -35,7 +35,7 @@ public class BusinessRuleTaskHandlerWrapper extends AbstractLogOrThrowWorkItemHa
 
     @PostConstruct
     public void init() {
-        businessRuleTaskHandler = new BusinessRuleTaskHandler(groupId, artifactId, version, new Long(scannerInterval));
+        businessRuleTaskHandler = new BusinessRuleTaskHandler(groupId, artifactId, version, Long.parseLong(scannerInterval));
     }
 
     @Override

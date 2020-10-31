@@ -107,6 +107,8 @@ public class KafkaMessageSenderWorkItemHandler implements WorkItemHandler {
                 UpdateIncidentCommandBuilder::builder);
         addPayloadBuilder("IncidentAssignment", "IncidentAssignmentEvent", incidentAssignmentEventDestination,
                 IncidentAssignmentEventBuilder::builder);
+        addPayloadBuilder("UpdateResponder", "UpdateResponderCommand", updateResponderCommandDestination,
+                UpdateResponderCommandBuilder::builder);
     }
 
     void addPayloadBuilder(String payloadType, String messageType, String destination,
