@@ -63,4 +63,13 @@ public class IncidentReportedEvent {
     public void setTimestamp(long timestamp) {
         this.timestamp = timestamp;
     }
+
+    @Override
+    public String toString() {
+        return "{\"id\": \"" +id + "\"," +
+                "\"lat\": " + lat + "," +
+                "\"lon\": " + lon + "," +
+                "\"numberOfPeople\": " + numberOfPeople +
+                "}";
+    }
 }

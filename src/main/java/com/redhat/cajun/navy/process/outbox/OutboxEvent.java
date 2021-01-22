@@ -1,4 +1,4 @@
-package com.redhat.cajun.navy.process.entity;
+package com.redhat.cajun.navy.process.outbox;
 
 import java.util.UUID;
 import javax.persistence.Column;
@@ -35,14 +35,26 @@ public class OutboxEvent {
     @NotNull
     private String payload;
 
-    OutboxEvent() {
-    }
+    @Column(name="ce_specversion")
+    @NotNull
+    private String ceSpecVersion;
 
-    public OutboxEvent(String aggregateType, String aggregateId, String type, String payload) {
-        this.aggregateType = aggregateType;
-        this.aggregateId = aggregateId;
-        this.type = type;
-        this.payload = payload;
+    @Column(name="ce_source")
+    @NotNull
+    private String ceSource;
+
+    @Column(name="ce_time")
+    @NotNull
+    private String ceTime;
+
+    @Column(name="ce_datacontenttype")
+    @NotNull
+    private String ceDataContentType;
+
+    @Column(name="ce_incidentid")
+    private String ceIncidentId;
+
+    OutboxEvent() {
     }
 
     public UUID getId() {
@@ -83,5 +95,45 @@ public class OutboxEvent {
 
     public void setPayload(String payload) {
         this.payload = payload;
+    }
+
+    public String getCeSpecVersion() {
+        return ceSpecVersion;
+    }
+
+    public void setCeSpecVersion(String ceSpecVersion) {
+        this.ceSpecVersion = ceSpecVersion;
+    }
+
+    public String getCeSource() {
+        return ceSource;
+    }
+
+    public void setCeSource(String ceSource) {
+        this.ceSource = ceSource;
+    }
+
+    public String getCeTime() {
+        return ceTime;
+    }
+
+    public void setCeTime(String ceTime) {
+        this.ceTime = ceTime;
+    }
+
+    public String getCeDataContentType() {
+        return ceDataContentType;
+    }
+
+    public void setCeDataContentType(String ceDataContentType) {
+        this.ceDataContentType = ceDataContentType;
+    }
+
+    public String getCeIncidentId() {
+        return ceIncidentId;
+    }
+
+    public void setCeIncidentId(String ceIncidentId) {
+        this.ceIncidentId = ceIncidentId;
     }
 }

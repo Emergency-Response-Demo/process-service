@@ -26,7 +26,7 @@ import org.slf4j.LoggerFactory;
 public class RESTController {
 
     private static final Logger logger = LoggerFactory.getLogger("RESTController");
-    private List<Integer> statesToAbort = new ArrayList<Integer>();
+    private final List<Integer> statesToAbort = new ArrayList<>();
 
     @Value("${incident.deployment.id}")
     private String deploymentId;
@@ -46,7 +46,7 @@ public class RESTController {
 
     @Transactional
     @RequestMapping(value = "/abortAll", method = RequestMethod.POST, produces = MimeTypeUtils.APPLICATION_JSON_VALUE)
-    public ResponseEntity abortAll() {
+    public ResponseEntity<Integer> abortAll() {
         
         Collection<ProcessInstanceDesc> pInstances = runtimeDataService.getProcessInstancesByDeploymentId(deploymentId, statesToAbort, null);
         logger.info("abortAll() aborting the following # of pInstances: "+pInstances.size());
@@ -54,7 +54,7 @@ public class RESTController {
             processService.abortProcessInstance(pInstance.getId());
         }
 
-        return new ResponseEntity(pInstances.size(), HttpStatus.OK);
+        return new ResponseEntity<>(pInstances.size(), HttpStatus.OK);
     }
 
 }

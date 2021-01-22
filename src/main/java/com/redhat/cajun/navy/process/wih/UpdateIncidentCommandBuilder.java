@@ -2,15 +2,16 @@ package com.redhat.cajun.navy.process.wih;
 
 import java.util.Map;
 
+import com.redhat.cajun.navy.process.message.model.CloudEventBuilder;
 import com.redhat.cajun.navy.process.message.model.Incident;
-import com.redhat.cajun.navy.process.message.model.Message;
 import com.redhat.cajun.navy.process.message.model.UpdateIncidentCommand;
+import io.cloudevents.CloudEvent;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
 public class UpdateIncidentCommandBuilder {
 
-    public static Pair<String, Message<?>> builder(String messageType, Map<String, Object> parameters) {
+    public static Pair<String, CloudEvent> builder(String messageType, Map<String, Object> parameters) {
 
         Object payload = parameters.get("Payload");
         if (!(payload instanceof com.redhat.cajun.navy.rules.model.Incident)) {
@@ -20,8 +21,11 @@ public class UpdateIncidentCommandBuilder {
         UpdateIncidentCommand command = new UpdateIncidentCommand.Builder(
                 new Incident.Builder(incident.getId(), status(incident.getStatus())).build())
                 .build();
-        return new ImmutablePair<>(incident.getId(),
-                new Message.Builder<>(messageType, "IncidentProcessService", command).build());
+        CloudEvent cloudEvent = new CloudEventBuilder<UpdateIncidentCommand>()
+                .withType(messageType)
+                .withData(command)
+                .build();
+        return new ImmutablePair<>(incident.getId(),cloudEvent);
     }
 
     private static com.redhat.cajun.navy.process.message.model.Incident.IncidentStatus status(String status) {

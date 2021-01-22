@@ -6,11 +6,8 @@ import java.util.Map;
 import java.util.function.BiFunction;
 import javax.annotation.PostConstruct;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.redhat.cajun.navy.process.entity.OutboxEvent;
-import com.redhat.cajun.navy.process.entity.OutboxEventEmitter;
-import com.redhat.cajun.navy.process.message.model.Message;
+import com.redhat.cajun.navy.process.outbox.OutboxEventEmitter;
+import io.cloudevents.CloudEvent;
 import org.apache.commons.lang3.tuple.ImmutableTriple;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
@@ -32,7 +29,7 @@ public class KafkaMessageSenderWorkItemHandler implements WorkItemHandler {
     private static final Logger log = LoggerFactory.getLogger(KafkaMessageSenderWorkItemHandler.class);
 
     @Autowired
-    private KafkaTemplate<String, Message<?>> kafkaTemplate;
+    private KafkaTemplate<String, CloudEvent> kafkaTemplate;
 
     @Autowired
     private OutboxEventEmitter outboxEventEmmitter;
@@ -49,7 +46,7 @@ public class KafkaMessageSenderWorkItemHandler implements WorkItemHandler {
     @Value("${sender.destination.incident-assignment-event}")
     private String incidentAssignmentEventDestination;
 
-    private Map<String, Triple<String, String, BiFunction<String, Map<String, Object>, Pair<String, Message<?>>>>> payloadBuilders = new HashMap<>();
+    private Map<String, Triple<String, String, BiFunction<String, Map<String, Object>, Pair<String, CloudEvent>>>> payloadBuilders = new HashMap<>();
 
     @Override
     @SuppressWarnings("unchecked")
@@ -59,7 +56,7 @@ public class KafkaMessageSenderWorkItemHandler implements WorkItemHandler {
         if (!(messageType instanceof String)) {
             throw new IllegalStateException("Parameter 'messageType' cannot be null and must be of type String");
         }
-        Triple<String, String, BiFunction<String, Map<String, Object>, Pair<String, Message<?>>>> messagetypeDestinationBuilderTuple = payloadBuilders
+        Triple<String, String, BiFunction<String, Map<String, Object>, Pair<String, CloudEvent>>> messagetypeDestinationBuilderTuple = payloadBuilders
                 .get(messageType);
         if (messagetypeDestinationBuilderTuple == null) {
             throw new IllegalStateException("No builder found for payload '" + messageType + "'");
@@ -67,28 +64,22 @@ public class KafkaMessageSenderWorkItemHandler implements WorkItemHandler {
 
         parameters.put("processId", Long.toString(workItem.getProcessInstanceId()));
 
-        Pair<String, Message<?>> keyAndMessagePair = messagetypeDestinationBuilderTuple.getRight()
+        Pair<String, CloudEvent> keyAndMessagePair = messagetypeDestinationBuilderTuple.getRight()
                 .apply(messagetypeDestinationBuilderTuple.getLeft(), parameters);
 
         send(messagetypeDestinationBuilderTuple.getMiddle(), keyAndMessagePair.getLeft(), keyAndMessagePair.getRight());
         manager.completeWorkItem(workItem.getId(), Collections.emptyMap());
     }
 
-    private void send(String destination, String key, Message<?> msg) {
+    private void send(String destination, String key, CloudEvent cloudEvent) {
         if (updateResponderCommandDestination.equals(destination)) {
-            OutboxEvent outboxEvent = null;
-            try {
-                outboxEvent = new OutboxEvent("responder-command", key, msg.getMessageType(), new ObjectMapper().writeValueAsString(msg));
-            } catch (JsonProcessingException e) {
-                throw new RuntimeException(e);
-            }
-            outboxEventEmmitter.emitEvent(outboxEvent);
+            outboxEventEmmitter.emitCloudEvent(cloudEvent);
         } else {
-            ListenableFuture<SendResult<String, Message<?>>> future = kafkaTemplate.send(destination, key, msg);
+            ListenableFuture<SendResult<String, CloudEvent>> future = kafkaTemplate.send(destination, key, cloudEvent);
             future.addCallback(
                     result -> log.debug(
-                            "Sent '" + msg.getMessageType() + "' message with key " + key + " to topic " + destination),
-                    ex -> log.error("Error sending '" + msg.getMessageType() + "' message with key " + key, ex));
+                            "Sent '" + cloudEvent.getType() + "' CloudEvent message with key " + key + " to topic " + destination),
+                    ex -> log.error("Error sending '" + cloudEvent.getType() + "' CloudEvent message with key " + key, ex));
         }
     }
 
@@ -112,7 +103,7 @@ public class KafkaMessageSenderWorkItemHandler implements WorkItemHandler {
     }
 
     void addPayloadBuilder(String payloadType, String messageType, String destination,
-            BiFunction<String, Map<String, Object>, Pair<String, Message<?>>> builder) {
+            BiFunction<String, Map<String, Object>, Pair<String, CloudEvent>> builder) {
         payloadBuilders.put(payloadType, new ImmutableTriple<>(messageType, destination, builder));
     }
 }

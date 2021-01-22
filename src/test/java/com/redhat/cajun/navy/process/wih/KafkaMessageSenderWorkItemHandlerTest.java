@@ -1,6 +1,8 @@
 package com.redhat.cajun.navy.process.wih;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -17,20 +19,18 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.redhat.cajun.navy.process.entity.OutboxEvent;
-import com.redhat.cajun.navy.process.entity.OutboxEventEmitter;
+import com.redhat.cajun.navy.process.outbox.OutboxEventEmitter;
+import com.redhat.cajun.navy.process.message.model.CloudEventBuilder;
 import com.redhat.cajun.navy.process.message.model.CreateMissionCommand;
 import com.redhat.cajun.navy.process.message.model.IncidentAssignmentEvent;
-import com.redhat.cajun.navy.process.message.model.Message;
 import com.redhat.cajun.navy.process.message.model.Responder;
 import com.redhat.cajun.navy.process.message.model.UpdateIncidentCommand;
 import com.redhat.cajun.navy.process.message.model.UpdateResponderCommand;
 import com.redhat.cajun.navy.rules.model.Incident;
 import com.redhat.cajun.navy.rules.model.Mission;
 import com.redhat.cajun.navy.rules.model.Status;
+import io.cloudevents.CloudEvent;
+import io.cloudevents.core.data.PojoCloudEventData;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
@@ -47,7 +47,7 @@ import org.springframework.util.concurrent.SettableListenableFuture;
 public class KafkaMessageSenderWorkItemHandlerTest {
 
     @Mock
-    private KafkaTemplate<String, Message<?>> kafkaTemplate;
+    private KafkaTemplate<String, CloudEvent> kafkaTemplate;
 
     @Mock
     private WorkItem workItem;
@@ -59,10 +59,7 @@ public class KafkaMessageSenderWorkItemHandlerTest {
     private OutboxEventEmitter outboxEventEmitter;
 
     @Captor
-    private ArgumentCaptor<Message<?>> messageCaptor;
-
-    @Captor
-    private ArgumentCaptor<OutboxEvent> outboxEventCaptor;
+    private ArgumentCaptor<CloudEvent> cloudEventCaptor;
 
     private KafkaMessageSenderWorkItemHandler wih;
 
@@ -88,11 +85,11 @@ public class KafkaMessageSenderWorkItemHandlerTest {
 
         wih.addPayloadBuilder("testPayloadType", "testMessageType", "topic-test", TestMessageEvent::build);
 
-        when(kafkaTemplate.send(any(String.class), any(String.class), any(Message.class))).thenReturn(new SettableListenableFuture<>());
+        when(kafkaTemplate.send(any(String.class), any(String.class), any(CloudEvent.class))).thenReturn(new SettableListenableFuture<>());
 
         wih.executeWorkItem(workItem, workItemManager);
         verify(workItemManager).completeWorkItem(eq(1L), anyMap());
-        verify(kafkaTemplate).send(eq("topic-test"), eq("testKey"), any(Message.class));
+        verify(kafkaTemplate).send(eq("topic-test"), eq("testKey"), any(CloudEvent.class));
     }
 
     @Test
@@ -115,17 +112,22 @@ public class KafkaMessageSenderWorkItemHandlerTest {
         when(workItem.getParameters()).thenReturn(parameters);
         when(workItem.getId()).thenReturn(1L);
 
-        when(kafkaTemplate.send(any(String.class), any(String.class), any(Message.class))).thenReturn(new SettableListenableFuture<>());
+        when(kafkaTemplate.send(any(String.class), any(String.class), any(CloudEvent.class))).thenReturn(new SettableListenableFuture<>());
 
         wih.executeWorkItem(workItem, workItemManager);
         verify(workItemManager).completeWorkItem(eq(1L), anyMap());
-        verify(kafkaTemplate).send(eq("topic-mission-command"), eq("incident123"), messageCaptor.capture());
+        verify(kafkaTemplate).send(eq("topic-mission-command"), eq("incident123"), cloudEventCaptor.capture());
 
-        Message<CreateMissionCommand> message = (Message<CreateMissionCommand>) messageCaptor.getValue();
-        assertThat(message.getMessageType(), equalTo("CreateMissionCommand"));
-        assertThat(message.getInvokingService(), equalTo("IncidentProcessService"));
-        assertThat(message.getBody(), notNullValue());
-        CreateMissionCommand cmd = message.getBody();
+        CloudEvent cloudEvent = cloudEventCaptor.getValue();
+        assertThat(cloudEvent.getType(), equalTo("CreateMissionCommand"));
+        assertThat(cloudEvent.getSource().toString(), equalTo("emergency-response/process-service"));
+        assertThat(cloudEvent.getSpecVersion().toString(), equalTo("1.0"));
+        assertThat(cloudEvent.getTime(), notNullValue());
+        assertThat(cloudEvent.getExtensionNames().size(), equalTo(0));
+        assertThat(cloudEvent.getData(), notNullValue());
+        assertThat(cloudEvent.getData(), is(instanceOf(PojoCloudEventData.class)));
+        PojoCloudEventData<CreateMissionCommand> cloudEventData = (PojoCloudEventData<CreateMissionCommand>) cloudEvent.getData();
+        CreateMissionCommand cmd = cloudEventData.getValue();
         assertThat(cmd.getIncidentId(), equalTo("incident123"));
         assertThat(cmd.getIncidentLat(), equalTo("30.12345"));
         assertThat(cmd.getIncidentLong(), equalTo("-70.98765"));
@@ -157,20 +159,21 @@ public class KafkaMessageSenderWorkItemHandlerTest {
 
         wih.executeWorkItem(workItem, workItemManager);
         verify(workItemManager).completeWorkItem(eq(1L), anyMap());
-        verify(outboxEventEmitter).emitEvent(outboxEventCaptor.capture());
+        verify(outboxEventEmitter).emitCloudEvent(cloudEventCaptor.capture());
 
-        OutboxEvent outboxEvent = outboxEventCaptor.getValue();
-        assertThat(outboxEvent.getAggregateType(), equalTo("responder-command"));
-        assertThat(outboxEvent.getAggregateId(), equalTo("responder123"));
-        assertThat(outboxEvent.getType(), equalTo("UpdateResponderCommand"));
-        String messageAsJson = outboxEvent.getPayload();
-        Message<UpdateResponderCommand> message = new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-                .readValue(messageAsJson, new TypeReference<Message<UpdateResponderCommand>>() {});
-        assertThat(message.getMessageType(), equalTo("UpdateResponderCommand"));
-        assertThat(message.getInvokingService(), equalTo("IncidentProcessService"));
-        assertThat(message.getHeaderValue("incidentId"), equalTo("incident123"));
-        assertThat(message.getBody(), notNullValue());
-        UpdateResponderCommand command = message.getBody();
+        CloudEvent cloudEvent = cloudEventCaptor.getValue();
+        assertThat(cloudEvent.getType(), equalTo("UpdateResponderCommand"));
+        assertThat(cloudEvent.getSource().toString(), equalTo("emergency-response/process-service"));
+        assertThat(cloudEvent.getSpecVersion().toString(), equalTo("1.0"));
+        assertThat(cloudEvent.getTime(), notNullValue());
+        assertThat(cloudEvent.getExtensionNames().size(), equalTo(3));
+        assertThat(cloudEvent.getData(), notNullValue());
+        assertThat(cloudEvent.getExtension("incidentid"), equalTo("incident123"));
+        assertThat(cloudEvent.getExtension("aggregatetype"), equalTo("responder-command"));
+        assertThat(cloudEvent.getExtension("aggregateid"), equalTo("responder123"));
+        assertThat(cloudEvent.getData(), is(instanceOf(PojoCloudEventData.class)));
+        PojoCloudEventData<UpdateResponderCommand> cloudEventData = (PojoCloudEventData<UpdateResponderCommand>) cloudEvent.getData();
+        UpdateResponderCommand command = cloudEventData.getValue();
         assertThat(command, notNullValue());
         Responder responder = command.getResponder();
         assertThat(responder, notNullValue());
@@ -197,17 +200,22 @@ public class KafkaMessageSenderWorkItemHandlerTest {
         when(workItem.getParameters()).thenReturn(parameters);
         when(workItem.getId()).thenReturn(1L);
 
-        when(kafkaTemplate.send(any(String.class), any(String.class), any(Message.class))).thenReturn(new SettableListenableFuture<>());
+        when(kafkaTemplate.send(any(String.class), any(String.class), any(CloudEvent.class))).thenReturn(new SettableListenableFuture<>());
 
         wih.executeWorkItem(workItem, workItemManager);
         verify(workItemManager).completeWorkItem(eq(1L), anyMap());
-        verify(kafkaTemplate).send(eq("topic-incident-command"), eq("incident123"), messageCaptor.capture());
+        verify(kafkaTemplate).send(eq("topic-incident-command"), eq("incident123"), cloudEventCaptor.capture());
 
-        Message<UpdateIncidentCommand> message = (Message<UpdateIncidentCommand>) messageCaptor.getValue();
-        assertThat(message.getMessageType(), equalTo("UpdateIncidentCommand"));
-        assertThat(message.getInvokingService(), equalTo("IncidentProcessService"));
-        assertThat(message.getBody(), notNullValue());
-        UpdateIncidentCommand command = message.getBody();
+        CloudEvent cloudEvent = cloudEventCaptor.getValue();
+        assertThat(cloudEvent.getType(), equalTo("UpdateIncidentCommand"));
+        assertThat(cloudEvent.getSource().toString(), equalTo("emergency-response/process-service"));
+        assertThat(cloudEvent.getSpecVersion().toString(), equalTo("1.0"));
+        assertThat(cloudEvent.getTime(), notNullValue());
+        assertThat(cloudEvent.getExtensionNames().size(), equalTo(0));
+        assertThat(cloudEvent.getData(), notNullValue());
+        assertThat(cloudEvent.getData(), is(instanceOf(PojoCloudEventData.class)));
+        PojoCloudEventData<UpdateIncidentCommand> cloudEventData = (PojoCloudEventData<UpdateIncidentCommand>) cloudEvent.getData();
+        UpdateIncidentCommand command = cloudEventData.getValue();
         assertThat(command, notNullValue());
         com.redhat.cajun.navy.process.message.model.Incident toUpdate = command.getIncident();
         assertThat(toUpdate, notNullValue());
@@ -228,17 +236,22 @@ public class KafkaMessageSenderWorkItemHandlerTest {
         when(workItem.getParameters()).thenReturn(parameters);
         when(workItem.getId()).thenReturn(1L);
 
-        when(kafkaTemplate.send(any(String.class), any(String.class), any(Message.class))).thenReturn(new SettableListenableFuture<>());
+        when(kafkaTemplate.send(any(String.class), any(String.class), any(CloudEvent.class))).thenReturn(new SettableListenableFuture<>());
 
         wih.executeWorkItem(workItem, workItemManager);
         verify(workItemManager).completeWorkItem(eq(1L), anyMap());
-        verify(kafkaTemplate).send(eq("topic-incident-command"), eq("incident123"), messageCaptor.capture());
+        verify(kafkaTemplate).send(eq("topic-incident-command"), eq("incident123"), cloudEventCaptor.capture());
 
-        Message<UpdateIncidentCommand> message = (Message<UpdateIncidentCommand>) messageCaptor.getValue();
-        assertThat(message.getMessageType(), equalTo("UpdateIncidentCommand"));
-        assertThat(message.getInvokingService(), equalTo("IncidentProcessService"));
-        assertThat(message.getBody(), notNullValue());
-        UpdateIncidentCommand command = message.getBody();
+        CloudEvent cloudEvent = cloudEventCaptor.getValue();
+        assertThat(cloudEvent.getType(), equalTo("UpdateIncidentCommand"));
+        assertThat(cloudEvent.getSource().toString(), equalTo("emergency-response/process-service"));
+        assertThat(cloudEvent.getSpecVersion().toString(), equalTo("1.0"));
+        assertThat(cloudEvent.getTime(), notNullValue());
+        assertThat(cloudEvent.getExtensionNames().size(), equalTo(0));
+        assertThat(cloudEvent.getData(), notNullValue());
+        assertThat(cloudEvent.getData(), is(instanceOf(PojoCloudEventData.class)));
+        PojoCloudEventData<UpdateIncidentCommand> cloudEventData = (PojoCloudEventData<UpdateIncidentCommand>) cloudEvent.getData();
+        UpdateIncidentCommand command = cloudEventData.getValue();
         assertThat(command, notNullValue());
         com.redhat.cajun.navy.process.message.model.Incident toUpdate = command.getIncident();
         assertThat(toUpdate, notNullValue());
@@ -259,17 +272,22 @@ public class KafkaMessageSenderWorkItemHandlerTest {
         when(workItem.getParameters()).thenReturn(parameters);
         when(workItem.getId()).thenReturn(1L);
 
-        when(kafkaTemplate.send(any(String.class), any(String.class), any(Message.class))).thenReturn(new SettableListenableFuture<>());
+        when(kafkaTemplate.send(any(String.class), any(String.class), any(CloudEvent.class))).thenReturn(new SettableListenableFuture<>());
 
         wih.executeWorkItem(workItem, workItemManager);
         verify(workItemManager).completeWorkItem(eq(1L), anyMap());
-        verify(kafkaTemplate).send(eq("topic-incident-command"), eq("incident123"), messageCaptor.capture());
+        verify(kafkaTemplate).send(eq("topic-incident-command"), eq("incident123"), cloudEventCaptor.capture());
 
-        Message<UpdateIncidentCommand> message = (Message<UpdateIncidentCommand>) messageCaptor.getValue();
-        assertThat(message.getMessageType(), equalTo("UpdateIncidentCommand"));
-        assertThat(message.getInvokingService(), equalTo("IncidentProcessService"));
-        assertThat(message.getBody(), notNullValue());
-        UpdateIncidentCommand command = message.getBody();
+        CloudEvent cloudEvent = cloudEventCaptor.getValue();
+        assertThat(cloudEvent.getType(), equalTo("UpdateIncidentCommand"));
+        assertThat(cloudEvent.getSource().toString(), equalTo("emergency-response/process-service"));
+        assertThat(cloudEvent.getSpecVersion().toString(), equalTo("1.0"));
+        assertThat(cloudEvent.getTime(), notNullValue());
+        assertThat(cloudEvent.getExtensionNames().size(), equalTo(0));
+        assertThat(cloudEvent.getData(), notNullValue());
+        assertThat(cloudEvent.getData(), is(instanceOf(PojoCloudEventData.class)));
+        PojoCloudEventData<UpdateIncidentCommand> cloudEventData = (PojoCloudEventData<UpdateIncidentCommand>) cloudEvent.getData();
+        UpdateIncidentCommand command = cloudEventData.getValue();
         assertThat(command, notNullValue());
         com.redhat.cajun.navy.process.message.model.Incident toUpdate = command.getIncident();
         assertThat(toUpdate, notNullValue());
@@ -297,17 +315,22 @@ public class KafkaMessageSenderWorkItemHandlerTest {
         when(workItem.getParameters()).thenReturn(parameters);
         when(workItem.getId()).thenReturn(1L);
 
-        when(kafkaTemplate.send(any(String.class), any(String.class), any(Message.class))).thenReturn(new SettableListenableFuture<>());
+        when(kafkaTemplate.send(any(String.class), any(String.class), any(CloudEvent.class))).thenReturn(new SettableListenableFuture<>());
 
         wih.executeWorkItem(workItem, workItemManager);
         verify(workItemManager).completeWorkItem(eq(1L), anyMap());
-        verify(kafkaTemplate).send(eq("topic-incident-event"), eq("incident123"), messageCaptor.capture());
+        verify(kafkaTemplate).send(eq("topic-incident-event"), eq("incident123"), cloudEventCaptor.capture());
 
-        Message<IncidentAssignmentEvent> message = (Message<IncidentAssignmentEvent>) messageCaptor.getValue();
-        assertThat(message.getMessageType(), equalTo("IncidentAssignmentEvent"));
-        assertThat(message.getInvokingService(), equalTo("IncidentProcessService"));
-        assertThat(message.getBody(), notNullValue());
-        IncidentAssignmentEvent event = message.getBody();
+        CloudEvent cloudEvent = cloudEventCaptor.getValue();
+        assertThat(cloudEvent.getType(), equalTo("IncidentAssignmentEvent"));
+        assertThat(cloudEvent.getSource().toString(), equalTo("emergency-response/process-service"));
+        assertThat(cloudEvent.getSpecVersion().toString(), equalTo("1.0"));
+        assertThat(cloudEvent.getTime(), notNullValue());
+        assertThat(cloudEvent.getExtensionNames().size(), equalTo(0));
+        assertThat(cloudEvent.getData(), notNullValue());
+        assertThat(cloudEvent.getData(), is(instanceOf(PojoCloudEventData.class)));
+        PojoCloudEventData<IncidentAssignmentEvent> cloudEventData = (PojoCloudEventData<IncidentAssignmentEvent>) cloudEvent.getData();
+        IncidentAssignmentEvent event = cloudEventData.getValue();
         assertThat(event, notNullValue());
         assertThat(event.getIncidentId(), equalTo("incident123"));
         assertThat(event.getAssignment(), equalTo(true));
@@ -333,17 +356,22 @@ public class KafkaMessageSenderWorkItemHandlerTest {
         when(workItem.getParameters()).thenReturn(parameters);
         when(workItem.getId()).thenReturn(1L);
 
-        when(kafkaTemplate.send(any(String.class), any(String.class), any(Message.class))).thenReturn(new SettableListenableFuture<>());
+        when(kafkaTemplate.send(any(String.class), any(String.class), any(CloudEvent.class))).thenReturn(new SettableListenableFuture<>());
 
         wih.executeWorkItem(workItem, workItemManager);
         verify(workItemManager).completeWorkItem(eq(1L), anyMap());
-        verify(kafkaTemplate).send(eq("topic-incident-event"), eq("incident123"), messageCaptor.capture());
+        verify(kafkaTemplate).send(eq("topic-incident-event"), eq("incident123"), cloudEventCaptor.capture());
 
-        Message<IncidentAssignmentEvent> message = (Message<IncidentAssignmentEvent>) messageCaptor.getValue();
-        assertThat(message.getMessageType(), equalTo("IncidentAssignmentEvent"));
-        assertThat(message.getInvokingService(), equalTo("IncidentProcessService"));
-        assertThat(message.getBody(), notNullValue());
-        IncidentAssignmentEvent event = message.getBody();
+        CloudEvent cloudEvent = cloudEventCaptor.getValue();
+        assertThat(cloudEvent.getType(), equalTo("IncidentAssignmentEvent"));
+        assertThat(cloudEvent.getSource().toString(), equalTo("emergency-response/process-service"));
+        assertThat(cloudEvent.getSpecVersion().toString(), equalTo("1.0"));
+        assertThat(cloudEvent.getTime(), notNullValue());
+        assertThat(cloudEvent.getExtensionNames().size(), equalTo(0));
+        assertThat(cloudEvent.getData(), notNullValue());
+        assertThat(cloudEvent.getData(), is(instanceOf(PojoCloudEventData.class)));
+        PojoCloudEventData<IncidentAssignmentEvent> cloudEventData = (PojoCloudEventData<IncidentAssignmentEvent>) cloudEvent.getData();
+        IncidentAssignmentEvent event = cloudEventData.getValue();
         assertThat(event, notNullValue());
         assertThat(event.getIncidentId(), equalTo("incident123"));
         assertThat(event.getAssignment(), equalTo(false));
@@ -352,10 +380,13 @@ public class KafkaMessageSenderWorkItemHandlerTest {
     @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
     public static class TestMessageEvent {
 
-        static Pair<String, Message<?>> build(String messageType, Map<String, Object> parameters) {
+        static Pair<String, CloudEvent> build(String messageType, Map<String, Object> parameters) {
             TestMessageEvent event = new TestMessageEvent();
-            Message<TestMessageEvent> message = new Message.Builder<>(messageType, "testservice", event).build();
-            return new ImmutablePair<>("testKey", message);
+            CloudEvent cloudEvent = new CloudEventBuilder<TestMessageEvent>()
+                    .withType(messageType)
+                    .withData(event)
+                    .build();
+            return new ImmutablePair<>("testKey", cloudEvent);
         }
 
     }
