@@ -19,7 +19,7 @@ public class IncidentAssignmentEventBuilder {
         }
         Mission mission = (Mission) payload;
         IncidentAssignmentEvent event = new IncidentAssignmentEvent.Builder(mission.getIncidentId(), "ASSIGNED".equals(mission.getStatus().name()),
-                mission.getIncidentLat().toString(), mission.getIncidentLong().toString()).build();
+                mission.getIncidentLat(), mission.getIncidentLong()).build();
         CloudEvent cloudEvent = new CloudEventBuilder<IncidentAssignmentEvent>()
                 .withType(messageType)
                 .withData(event)

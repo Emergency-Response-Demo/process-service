@@ -1,5 +1,7 @@
 package com.redhat.cajun.navy.process.message.model;
 
+import java.math.BigDecimal;
+
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
@@ -9,17 +11,17 @@ public class CreateMissionCommand {
 
     private String responderId;
 
-    private String responderStartLat;
+    private BigDecimal responderStartLat;
 
-    private String responderStartLong;
+    private BigDecimal responderStartLong;
 
-    private String incidentLat;
+    private BigDecimal incidentLat;
 
-    private String incidentLong;
+    private BigDecimal incidentLong;
 
-    private String destinationLat;
+    private BigDecimal destinationLat;
 
-    private String destinationLong;
+    private BigDecimal destinationLong;
 
     private String processId;
 
@@ -31,27 +33,27 @@ public class CreateMissionCommand {
         return responderId;
     }
 
-    public String getResponderStartLat() {
+    public BigDecimal getResponderStartLat() {
         return responderStartLat;
     }
 
-    public String getResponderStartLong() {
+    public BigDecimal getResponderStartLong() {
         return responderStartLong;
     }
 
-    public String getIncidentLat() {
+    public BigDecimal getIncidentLat() {
         return incidentLat;
     }
 
-    public String getIncidentLong() {
+    public BigDecimal getIncidentLong() {
         return incidentLong;
     }
 
-    public String getDestinationLat() {
+    public BigDecimal getDestinationLat() {
         return destinationLat;
     }
 
-    public String getDestinationLong() {
+    public BigDecimal getDestinationLong() {
         return destinationLong;
     }
 
@@ -77,32 +79,32 @@ public class CreateMissionCommand {
             return this;
         }
 
-        public Builder responderStartLat(String responderStartLat) {
+        public Builder responderStartLat(BigDecimal responderStartLat) {
             command.responderStartLat = responderStartLat;
             return this;
         }
 
-        public Builder responderStartLong(String responderStartLong) {
+        public Builder responderStartLong(BigDecimal responderStartLong) {
             command.responderStartLong = responderStartLong;
             return this;
         }
 
-        public Builder incidentLat(String incidentLat) {
+        public Builder incidentLat(BigDecimal incidentLat) {
             command.incidentLat = incidentLat;
             return this;
         }
 
-        public Builder incidentLong(String incidentLong) {
+        public Builder incidentLong(BigDecimal incidentLong) {
             command.incidentLong = incidentLong;
             return this;
         }
 
-        public Builder destinationLat(String destinationLat) {
+        public Builder destinationLat(BigDecimal destinationLat) {
             command.destinationLat = destinationLat;
             return this;
         }
 
-        public Builder destinationLong(String destinationLong) {
+        public Builder destinationLong(BigDecimal destinationLong) {
             command.destinationLong = destinationLong;
             return this;
         }
