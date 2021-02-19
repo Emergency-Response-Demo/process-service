@@ -10,8 +10,11 @@ import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 import static org.springframework.test.util.ReflectionTestUtils.setField;
 
+import java.net.URI;
 import java.util.Collections;
 
+import io.cloudevents.CloudEvent;
+import io.cloudevents.core.builder.CloudEventBuilder;
 import org.jbpm.process.instance.ProcessInstance;
 import org.jbpm.services.api.ProcessService;
 import org.jbpm.services.api.query.QueryResultMapper;
@@ -68,11 +71,7 @@ public class MissionEventTopicListenerTest {
     @SuppressWarnings("unchecked")
     public void testProcessMissionStartedEventMessage() {
 
-        String json = "{" + "\"messageType\" : \"MissionStartedEvent\"," +
-                "\"id\":\"messageId\"," +
-                "\"invokingService\":\"messageSender\"," +
-                "\"timestamp\":1521148332397," +
-                "\"body\" : {" +
+        String json = "{" +
                 "\"missionId\" : \"mission123\"," +
                 "\"incidentId\" : \"incident123\"," +
                 "\"responderId\" : \"responder123\"," +
@@ -82,13 +81,21 @@ public class MissionEventTopicListenerTest {
                 "\"incidentLong\" : \"-78.98765\"," +
                 "\"destinationLat\" : \"32.12345\"," +
                 "\"destinationLong\" : \"-79.98765\"" +
-                "}" + "}";
+                "}";
+
+        CloudEvent event = CloudEventBuilder.v1()
+                .withId("000")
+                .withType("MissionStartedEvent")
+                .withSource(URI.create("http://example.com"))
+                .withDataContentType("application/json")
+                .withData(json.getBytes())
+                .build();
 
         when(processService.getProcessInstance(any(CorrelationKey.class))).thenReturn(processInstance);
         when(queryService.query(anyString(), any(QueryResultMapper.class), any(QueryContext.class), any(QueryParam.class)))
                 .thenReturn(Collections.singletonList("MissionStarted"));
 
-        messageListener.processMessage(json, "topic", 1, ack);
+        messageListener.processMessage(event, "topic", 1, ack);
 
         verify(processService).getProcessInstance(correlationCaptor.capture());
         CorrelationKey correlationKey = correlationCaptor.getValue();
@@ -102,11 +109,7 @@ public class MissionEventTopicListenerTest {
     @SuppressWarnings("unchecked")
     public void testProcessMissionStartedEventMessageWhenNotFound() {
 
-        String json = "{" + "\"messageType\" : \"MissionStartedEvent\"," +
-                "\"id\":\"messageId\"," +
-                "\"invokingService\":\"messageSender\"," +
-                "\"timestamp\":1521148332397," +
-                "\"body\" : {" +
+        String json = "{" +
                 "\"missionId\" : \"mission123\"," +
                 "\"incidentId\" : \"incident123\"," +
                 "\"responderId\" : \"responder123\"," +
@@ -116,13 +119,21 @@ public class MissionEventTopicListenerTest {
                 "\"incidentLong\" : \"-78.98765\"," +
                 "\"destinationLat\" : \"32.12345\"," +
                 "\"destinationLong\" : \"-79.98765\"" +
-                "}" + "}";
+                "}";
+
+        CloudEvent event = CloudEventBuilder.v1()
+                .withId("000")
+                .withType("MissionStartedEvent")
+                .withSource(URI.create("http://example.com"))
+                .withDataContentType("application/json")
+                .withData(json.getBytes())
+                .build();
 
         when(processService.getProcessInstance(any(CorrelationKey.class))).thenReturn(null);
         when(queryService.query(anyString(), any(QueryResultMapper.class), any(QueryContext.class), any(QueryParam.class)))
                 .thenReturn(Collections.singletonList("MissionStarted"));
 
-        messageListener.processMessage(json, "topic", 1, ack);
+        messageListener.processMessage(event, "topic", 1, ack);
 
         verify(processService).getProcessInstance(correlationCaptor.capture());
         CorrelationKey correlationKey = correlationCaptor.getValue();
@@ -135,11 +146,7 @@ public class MissionEventTopicListenerTest {
     @Test
     public void testProcessMissionStartedEventMessageWhenNoIncidentId() {
 
-        String json = "{" + "\"messageType\" : \"MissionStartedEvent\"," +
-                "\"id\":\"messageId\"," +
-                "\"invokingService\":\"messageSender\"," +
-                "\"timestamp\":1521148332397," +
-                "\"body\" : {" +
+        String json = "{" +
                 "\"missionId\" : \"mission123\"," +
                 "\"responderId\" : \"responder123\"," +
                 "\"responderStartLat\" : \"30.12345\"," +
@@ -148,9 +155,17 @@ public class MissionEventTopicListenerTest {
                 "\"incidentLong\" : \"-78.98765\"," +
                 "\"destinationLat\" : \"32.12345\"," +
                 "\"destinationLong\" : \"-79.98765\"" +
-                "}" + "}";
+                "}";
 
-        messageListener.processMessage(json, "topic", 1, ack);
+        CloudEvent event = CloudEventBuilder.v1()
+                .withId("000")
+                .withType("MissionStartedEvent")
+                .withSource(URI.create("http://example.com"))
+                .withDataContentType("application/json")
+                .withData(json.getBytes())
+                .build();
+
+        messageListener.processMessage(event, "topic", 1, ack);
 
         verify(processService, never()).getProcessInstance(any(CorrelationKey.class));
         verify(processService, never()).signalProcessInstance(any(), any(), any());
@@ -162,21 +177,25 @@ public class MissionEventTopicListenerTest {
     @SuppressWarnings("unchecked")
     public void testProcessMissionPickedUpEventMessage() {
 
-        String json = "{" + "\"messageType\" : \"MissionPickedUpEvent\"," +
-                "\"id\":\"messageId\"," +
-                "\"invokingService\":\"messageSender\"," +
-                "\"timestamp\":1521148332397," +
-                "\"body\" : {" +
+        String json = "{" +
                 "\"missionId\" : \"mission123\"," +
                 "\"incidentId\" : \"incident123\"," +
                 "\"responderId\" : \"responder123\"" +
-                "}" + "}";
+                "}";
+
+        CloudEvent event = CloudEventBuilder.v1()
+                .withId("000")
+                .withType("MissionPickedUpEvent")
+                .withSource(URI.create("http://example.com"))
+                .withDataContentType("application/json")
+                .withData(json.getBytes())
+                .build();
 
         when(processService.getProcessInstance(any(CorrelationKey.class))).thenReturn(processInstance);
         when(queryService.query(anyString(), any(QueryResultMapper.class), any(QueryContext.class), any(QueryParam.class)))
                 .thenReturn(Collections.singletonList("VictimPickedUp"));
 
-        messageListener.processMessage(json, "topic", 1, ack);
+        messageListener.processMessage(event, "topic", 1, ack);
 
         verify(processService).getProcessInstance(correlationCaptor.capture());
         CorrelationKey correlationKey = correlationCaptor.getValue();
@@ -190,11 +209,7 @@ public class MissionEventTopicListenerTest {
     @SuppressWarnings("unchecked")
     public void testProcessMissionPickedUpEventMessageWhenNotFound() {
 
-        String json = "{" + "\"messageType\" : \"MissionPickedUpEvent\"," +
-                "\"id\":\"messageId\"," +
-                "\"invokingService\":\"messageSender\"," +
-                "\"timestamp\":1521148332397," +
-                "\"body\" : {" +
+        String json = "{" +
                 "\"missionId\" : \"mission123\"," +
                 "\"incidentId\" : \"incident123\"," +
                 "\"responderId\" : \"responder123\"," +
@@ -204,13 +219,21 @@ public class MissionEventTopicListenerTest {
                 "\"incidentLong\" : \"-78.98765\"," +
                 "\"destinationLat\" : \"32.12345\"," +
                 "\"destinationLong\" : \"-79.98765\"" +
-                "}" + "}";
+                "}";
+
+        CloudEvent event = CloudEventBuilder.v1()
+                .withId("000")
+                .withType("MissionPickedUpEvent")
+                .withSource(URI.create("http://example.com"))
+                .withDataContentType("application/json")
+                .withData(json.getBytes())
+                .build();
 
         when(processService.getProcessInstance(any(CorrelationKey.class))).thenReturn(null);
         when(queryService.query(anyString(), any(QueryResultMapper.class), any(QueryContext.class), any(QueryParam.class)))
                 .thenReturn(Collections.singletonList("VictimPickedUp"));
 
-        messageListener.processMessage(json, "topic", 1, ack);
+        messageListener.processMessage(event, "topic", 1, ack);
 
         verify(processService).getProcessInstance(correlationCaptor.capture());
         CorrelationKey correlationKey = correlationCaptor.getValue();
@@ -221,13 +244,9 @@ public class MissionEventTopicListenerTest {
     }
 
     @Test
-    public void testProcessVictimPickedUpEventMessageWhenNoIncidentId() {
+    public void testProcessMissionPickedUpEventMessageWhenNoIncidentId() {
 
-        String json = "{" + "\"messageType\" : \"VictimPickedUpEvent\"," +
-                "\"id\":\"messageId\"," +
-                "\"invokingService\":\"messageSender\"," +
-                "\"timestamp\":1521148332397," +
-                "\"body\" : {" +
+        String json = "{" +
                 "\"missionId\" : \"mission123\"," +
                 "\"responderId\" : \"responder123\"," +
                 "\"responderStartLat\" : \"30.12345\"," +
@@ -236,9 +255,17 @@ public class MissionEventTopicListenerTest {
                 "\"incidentLong\" : \"-78.98765\"," +
                 "\"destinationLat\" : \"32.12345\"," +
                 "\"destinationLong\" : \"-79.98765\"" +
-                "}" + "}";
+                "}";
 
-        messageListener.processMessage(json, "topic", 1, ack);
+        CloudEvent event = CloudEventBuilder.v1()
+                .withId("000")
+                .withType("MissionPickedUpEvent")
+                .withSource(URI.create("http://example.com"))
+                .withDataContentType("application/json")
+                .withData(json.getBytes())
+                .build();
+
+        messageListener.processMessage(event, "topic", 1, ack);
 
         verify(processService, never()).getProcessInstance(any(CorrelationKey.class));
         verify(processService, never()).signalProcessInstance(any(), any(), any());
@@ -250,11 +277,7 @@ public class MissionEventTopicListenerTest {
     @SuppressWarnings("unchecked")
     public void testProcessMissionCompletedEventMessage() {
 
-        String json = "{" + "\"messageType\" : \"MissionCompletedEvent\"," +
-                "\"id\":\"messageId\"," +
-                "\"invokingService\":\"messageSender\"," +
-                "\"timestamp\":1521148332397," +
-                "\"body\" : {" +
+        String json = "{" +
                 "\"missionId\" : \"mission123\"," +
                 "\"incidentId\" : \"incident123\"," +
                 "\"responderId\" : \"responder123\"," +
@@ -264,13 +287,21 @@ public class MissionEventTopicListenerTest {
                 "\"incidentLong\" : \"-78.98765\"," +
                 "\"destinationLat\" : \"32.12345\"," +
                 "\"destinationLong\" : \"-79.98765\"" +
-                "}" + "}";
+                "}";
+
+        CloudEvent event = CloudEventBuilder.v1()
+                .withId("000")
+                .withType("MissionCompletedEvent")
+                .withSource(URI.create("http://example.com"))
+                .withDataContentType("application/json")
+                .withData(json.getBytes())
+                .build();
 
         when(processService.getProcessInstance(any(CorrelationKey.class))).thenReturn(processInstance);
         when(queryService.query(anyString(), any(QueryResultMapper.class), any(QueryContext.class), any(QueryParam.class)))
                 .thenReturn(Collections.singletonList("VictimDelivered"));
 
-        messageListener.processMessage(json, "topic", 1, ack);
+        messageListener.processMessage(event, "topic", 1, ack);
 
         verify(processService).getProcessInstance(correlationCaptor.capture());
         CorrelationKey correlationKey = correlationCaptor.getValue();
@@ -284,11 +315,7 @@ public class MissionEventTopicListenerTest {
     @SuppressWarnings("unchecked")
     public void testProcessMissionCompletedEventMessageWhenNotFound() {
 
-        String json = "{" + "\"messageType\" : \"MissionCompletedEvent\"," +
-                "\"id\":\"messageId\"," +
-                "\"invokingService\":\"messageSender\"," +
-                "\"timestamp\":1521148332397," +
-                "\"body\" : {" +
+        String json = "{" +
                 "\"missionId\" : \"mission123\"," +
                 "\"incidentId\" : \"incident123\"," +
                 "\"responderId\" : \"responder123\"," +
@@ -298,13 +325,21 @@ public class MissionEventTopicListenerTest {
                 "\"incidentLong\" : \"-78.98765\"," +
                 "\"destinationLat\" : \"32.12345\"," +
                 "\"destinationLong\" : \"-79.98765\"" +
-                "}" + "}";
+                "}";
+
+        CloudEvent event = CloudEventBuilder.v1()
+                .withId("000")
+                .withType("MissionCompletedEvent")
+                .withSource(URI.create("http://example.com"))
+                .withDataContentType("application/json")
+                .withData(json.getBytes())
+                .build();
 
         when(processService.getProcessInstance(any(CorrelationKey.class))).thenReturn(null);
         when(queryService.query(anyString(), any(QueryResultMapper.class), any(QueryContext.class), any(QueryParam.class)))
                 .thenReturn(Collections.singletonList("VictimPickedUp"));
 
-        messageListener.processMessage(json, "topic", 1, ack);
+        messageListener.processMessage(event, "topic", 1, ack);
 
         verify(processService).getProcessInstance(correlationCaptor.capture());
         CorrelationKey correlationKey = correlationCaptor.getValue();
@@ -317,11 +352,7 @@ public class MissionEventTopicListenerTest {
     @Test
     public void testProcessVictimDeliveredEventMessageWhenNoIncidentId() {
 
-        String json = "{" + "\"messageType\" : \"VictimDeliveredEvent\"," +
-                "\"id\":\"messageId\"," +
-                "\"invokingService\":\"messageSender\"," +
-                "\"timestamp\":1521148332397," +
-                "\"body\" : {" +
+        String json = "{" +
                 "\"missionId\" : \"mission123\"," +
                 "\"responderId\" : \"responder123\"," +
                 "\"responderStartLat\" : \"30.12345\"," +
@@ -330,9 +361,17 @@ public class MissionEventTopicListenerTest {
                 "\"incidentLong\" : \"-78.98765\"," +
                 "\"destinationLat\" : \"32.12345\"," +
                 "\"destinationLong\" : \"-79.98765\"" +
-                "}" + "}";
+                "}";
 
-        messageListener.processMessage(json, "topic", 1, ack);
+        CloudEvent event = CloudEventBuilder.v1()
+                .withId("000")
+                .withType("MissionCompletedEvent")
+                .withSource(URI.create("http://example.com"))
+                .withDataContentType("application/json")
+                .withData(json.getBytes())
+                .build();
+
+        messageListener.processMessage(event, "topic", 1, ack);
 
         verify(processService, never()).getProcessInstance(any(CorrelationKey.class));
         verify(processService, never()).signalProcessInstance(any(), any(), any());
@@ -343,11 +382,7 @@ public class MissionEventTopicListenerTest {
     @Test
     public void testProcessMessageWhenWrongMessageType() {
 
-        String json = "{" + "\"messageType\" : \"WrongMessageTypet\"," +
-                "\"id\":\"messageId\"," +
-                "\"invokingService\":\"messageSender\"," +
-                "\"timestamp\":1521148332397," +
-                "\"body\" : {" +
+        String json = "{" +
                 "\"missionId\" : \"mission123\"," +
                 "\"responderId\" : \"responder123\"," +
                 "\"responderStartLat\" : \"30.12345\"," +
@@ -356,9 +391,17 @@ public class MissionEventTopicListenerTest {
                 "\"incidentLong\" : \"-78.98765\"," +
                 "\"destinationLat\" : \"32.12345\"," +
                 "\"destinationLong\" : \"-79.98765\"" +
-                "}" + "}";
+                "}";
 
-        messageListener.processMessage(json, "topic", 1, ack);
+        CloudEvent event = CloudEventBuilder.v1()
+                .withId("000")
+                .withType("WrongMessageType")
+                .withSource(URI.create("http://example.com"))
+                .withDataContentType("application/json")
+                .withData(json.getBytes())
+                .build();
+
+        messageListener.processMessage(event, "topic", 1, ack);
 
         verify(processService, never()).getProcessInstance(any(CorrelationKey.class));
         verify(processService, never()).signalProcessInstance(any(), any(), any());
@@ -373,7 +416,15 @@ public class MissionEventTopicListenerTest {
                 "\"field2\":\"value2\"" +
                 "}";
 
-        messageListener.processMessage(json, "topic", 1, ack);
+        CloudEvent event = CloudEventBuilder.v1()
+                .withId("000")
+                .withType("MissionStartedUpEvent")
+                .withSource(URI.create("http://example.com"))
+                .withDataContentType("application/json")
+                .withData(json.getBytes())
+                .build();
+
+        messageListener.processMessage(event, "topic", 1, ack);
 
         verify(processService, never()).getProcessInstance(any(CorrelationKey.class));
         verify(processService, never()).signalProcessInstance(any(), any(), any());

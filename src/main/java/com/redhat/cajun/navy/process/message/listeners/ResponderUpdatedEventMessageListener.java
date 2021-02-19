@@ -1,12 +1,12 @@
 package com.redhat.cajun.navy.process.message.listeners;
 
+import java.io.IOException;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jayway.jsonpath.JsonPath;
-import com.redhat.cajun.navy.process.message.model.Message;
 import com.redhat.cajun.navy.process.message.model.ResponderUpdatedEvent;
+import io.cloudevents.CloudEvent;
 import org.jbpm.services.api.ProcessService;
-import org.jbpm.services.api.query.QueryService;
 import org.kie.api.runtime.process.ProcessInstance;
 import org.kie.internal.KieInternalServices;
 import org.kie.internal.process.CorrelationKey;
@@ -37,40 +37,44 @@ public class ResponderUpdatedEventMessageListener {
     private ProcessService processService;
 
     @Autowired
-    private QueryService queryService;
-
-    @Autowired
     private PlatformTransactionManager transactionManager;
 
-    private CorrelationKeyFactory correlationKeyFactory = KieInternalServices.Factory.get().newCorrelationKeyFactory();
+    private final CorrelationKeyFactory correlationKeyFactory = KieInternalServices.Factory.get().newCorrelationKeyFactory();
 
     @KafkaListener(topics = "${listener.destination.responder-updated-event}")
-    public void processMessage(@Payload String messageAsJson, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key,
+    public void processMessage(@Payload CloudEvent cloudEvent, @Header(KafkaHeaders.RECEIVED_MESSAGE_KEY) String key,
                                @Header(KafkaHeaders.RECEIVED_TOPIC) String topic,
                                @Header(KafkaHeaders.RECEIVED_PARTITION_ID) int partition, Acknowledgment ack) {
 
-        if (!accept(messageAsJson)) {
+        if (!accept(cloudEvent)) {
             ack.acknowledge();
             return;
         }
 
-        log.debug("Processing '" + TYPE_RESPONDER_UPDATED_EVENT + "' message for responder '" + key + "' from topic:partition '" + topic + ":" + partition + "'");
+        log.debug("Processing '" + TYPE_RESPONDER_UPDATED_EVENT + "' CloudEvent for responder '" + key + "' from topic:partition '" + topic + ":" + partition + "'");
 
-        Message<ResponderUpdatedEvent> message;
+        String incidentId = (String) cloudEvent.getExtension("incidentid");
+        if (incidentId == null || incidentId.isEmpty()) {
+            log.warn("CloudEvent contains no extension value for incidentId. Message cannot be processed!");
+            ack.acknowledge();
+            return;
+        }
+
+        try {
+            ResponderUpdatedEvent message = new ObjectMapper().readValue(cloudEvent.getData().toBytes(), new TypeReference<ResponderUpdatedEvent>() {});
+        } catch (IOException e) {
+            log.error("CloudEvent data cannot be unmarshalled to ResponderUpdatedEvent object. Message is ignored.");
+            ack.acknowledge();
+            return;
+        }
+
         try {
 
-            message = new ObjectMapper().readValue(messageAsJson, new TypeReference<Message<ResponderUpdatedEvent>>() {});
-
-            String incidentId = message.getHeaderValue("incidentId");
-            if (incidentId == null || incidentId.isEmpty()) {
-                log.warn("Message contains no header value for incidentId. Message cannot be processed!");
-                ack.acknowledge();
-                return;
-            }
+            ResponderUpdatedEvent message = new ObjectMapper().readValue(cloudEvent.getData().toBytes(), new TypeReference<ResponderUpdatedEvent>() {});
 
             CorrelationKey correlationKey = correlationKeyFactory.newCorrelationKey(incidentId);
 
-            Boolean available = "success".equals(message.getBody().getStatus());
+            Boolean available = "success".equals(message.getStatus());
 
             log.debug("Signaling process with correlationkey '" + correlationKey + ". Responder '" + key + "', available '" + available + "'." );
 
@@ -83,60 +87,32 @@ public class ResponderUpdatedEventMessageListener {
 
             ack.acknowledge();
         } catch (Exception e) {
-            log.error("Error processing msg " + messageAsJson, e);
+            log.error("Error processing CloudEvent " + cloudEvent, e);
             throw new IllegalStateException(e.getMessage(), e);
         }
 
     }
 
-    private boolean accept(String messageAsJson) {
-        try {
-            String messageType = JsonPath.read(messageAsJson, "$.messageType");
-            if (TYPE_RESPONDER_UPDATED_EVENT.equalsIgnoreCase(messageType) ) {
-                return true;
-            } else {
-                log.debug("Message with type '" + messageType + "' is ignored");
-            }
-        } catch (Exception e) {
-            log.warn("Unexpected message without 'messageType' field.");
+    private boolean accept(CloudEvent cloudEvent) {
+        if (cloudEvent == null) {
+            log.warn("Message is not a CloudEvent. Message is ignored");
+            //TODO: exception logging
+            return false;
         }
-        return false;
-    }
-
-    public static class IntegerHolder {
-
-        private int value;
-
-        private int limit;
-
-        public IntegerHolder(int limit) {
-            value = 1;
-            this.limit = limit;
+        String messageType = cloudEvent.getType();
+        if (!(TYPE_RESPONDER_UPDATED_EVENT.equalsIgnoreCase(messageType) )) {
+            log.debug("Message with type '" + messageType + "' is ignored");
+            return false;
         }
-
-        public void add() {
-            value++;
+        String contentType = cloudEvent.getDataContentType();
+        if (contentType == null || !(contentType.equalsIgnoreCase("application/json"))) {
+            log.warn("CloudEvent data content type is not specified or not 'application/json'. Message is ignored");
+            return false;
         }
-
-        public int getValue() {
-            return value;
+        if (cloudEvent.getData() == null) {
+            log.warn("CloudEvent contains no data. Message is ignored");
+            return false;
         }
-
-        public void reset() {
-            value = 0;
-        }
-
-        public boolean limit() {
-            return value > limit;
-        }
-
-        public boolean counting() {
-            return value > 0 && value <= limit;
-        }
-
-        public boolean done() {
-            return value == 0;
-        }
-
+        return true;
     }
 }

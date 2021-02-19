@@ -3,23 +3,20 @@ package com.redhat.cajun.navy.process.message.listeners;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
 import static org.springframework.test.util.ReflectionTestUtils.setField;
 
-import java.util.Collections;
+import java.net.URI;
 
+import io.cloudevents.CloudEvent;
+import io.cloudevents.core.builder.CloudEventBuilder;
 import org.jbpm.process.instance.ProcessInstance;
 import org.jbpm.services.api.ProcessService;
-import org.jbpm.services.api.query.QueryResultMapper;
-import org.jbpm.services.api.query.QueryService;
-import org.jbpm.services.api.query.model.QueryParam;
 import org.junit.Before;
 import org.junit.Test;
-import org.kie.api.runtime.query.QueryContext;
 import org.kie.internal.process.CorrelationKey;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -45,9 +42,6 @@ public class ResponderUpdatedEventMessageListenerTest {
     @Mock
     private Acknowledgment ack;
 
-    @Mock
-    private QueryService queryService;
-
     @Captor
     private ArgumentCaptor<CorrelationKey> correlationKeyCaptor;
 
@@ -59,20 +53,13 @@ public class ResponderUpdatedEventMessageListenerTest {
         messageListener = new ResponderUpdatedEventMessageListener();
         setField(messageListener, null, ptm, PlatformTransactionManager.class);
         setField(messageListener, null, processService, ProcessService.class);
-        setField(messageListener, null, queryService, QueryService.class);
         when(ptm.getTransaction(any())).thenReturn(transactionStatus);
         when(processInstance.getId()).thenReturn(100L);
     }
 
     @Test
-    @SuppressWarnings("unchecked")
     public void testProcessMessage() {
-        String json = "{" + "\"messageType\" : \"ResponderUpdatedEvent\"," +
-                "\"id\":\"messageId\"," +
-                "\"invokingService\":\"messageSender\"," +
-                "\"timestamp\":1521148332397," +
-                "\"header\" : {\"incidentId\" : \"incident123\"}," +
-                "\"body\" : {" +
+        String json = "{" +
                 "\"status\" : \"success\"," +
                 "\"responder\" : {" +
                 "\"id\" : \"responderId\"," +
@@ -83,13 +70,20 @@ public class ResponderUpdatedEventMessageListenerTest {
                 "\"boatCapacity\" : 2," +
                 "\"medicalKit\" : true," +
                 "\"available\" : false" +
-                "}" + "}" + "}";
+                "}" + "}";
+
+        CloudEvent event = CloudEventBuilder.v1()
+                .withId("000")
+                .withType("ResponderUpdatedEvent")
+                .withSource(URI.create("http://example.com"))
+                .withDataContentType("application/json")
+                .withData(json.getBytes())
+                .withExtension("incidentid", "incident123")
+                .build();
 
         when(processService.getProcessInstance(any(CorrelationKey.class))).thenReturn(processInstance);
-        when(queryService.query(anyString(), any(QueryResultMapper.class), any(QueryContext.class), any(QueryParam.class)))
-                .thenReturn(Collections.singletonList("ResponderAvailable"));
 
-        messageListener.processMessage(json, "responderId", "test-topic", 1, ack);
+        messageListener.processMessage(event, "responderId", "test-topic", 1, ack);
 
         verify(processService).signalProcessInstance(100L, "ResponderAvailable", true);
         verify(processService).getProcessInstance(correlationKeyCaptor.capture());
@@ -99,14 +93,8 @@ public class ResponderUpdatedEventMessageListenerTest {
     }
 
     @Test
-    @SuppressWarnings("unchecked")
     public void testProcessMessageWithPersonField() {
-        String json = "{" + "\"messageType\" : \"ResponderUpdatedEvent\"," +
-                "\"id\":\"messageId\"," +
-                "\"invokingService\":\"messageSender\"," +
-                "\"timestamp\":1521148332397," +
-                "\"header\" : {\"incidentId\" : \"incident123\"}," +
-                "\"body\" : {" +
+        String json = "{" +
                 "\"status\" : \"success\"," +
                 "\"responder\" : {" +
                 "\"id\" : \"responderId\"," +
@@ -118,13 +106,20 @@ public class ResponderUpdatedEventMessageListenerTest {
                 "\"medicalKit\" : true," +
                 "\"available\" : false," +
                 "\"person\" : false" +
-                "}" + "}" + "}";
+                "}" + "}";
+
+        CloudEvent event = CloudEventBuilder.v1()
+                .withId("000")
+                .withType("ResponderUpdatedEvent")
+                .withSource(URI.create("http://example.com"))
+                .withDataContentType("application/json")
+                .withData(json.getBytes())
+                .withExtension("incidentid", "incident123")
+                .build();
 
         when(processService.getProcessInstance(any(CorrelationKey.class))).thenReturn(processInstance);
-        when(queryService.query(anyString(), any(QueryResultMapper.class), any(QueryContext.class), any(QueryParam.class)))
-                .thenReturn(Collections.singletonList("ResponderAvailable"));
 
-        messageListener.processMessage(json, "responderId", "test-topic", 1, ack);
+        messageListener.processMessage(event, "responderId", "test-topic", 1, ack);
 
         verify(processService).signalProcessInstance(100L, "ResponderAvailable", true);
         verify(processService).getProcessInstance(correlationKeyCaptor.capture());
@@ -134,14 +129,8 @@ public class ResponderUpdatedEventMessageListenerTest {
     }
 
     @Test
-    @SuppressWarnings("unchecked")
     public void testProcessMessageWhenStatusError() {
-        String json = "{" + "\"messageType\" : \"ResponderUpdatedEvent\"," +
-                "\"id\":\"messageId\"," +
-                "\"invokingService\":\"messageSender\"," +
-                "\"timestamp\":1521148332397," +
-                "\"header\" : {\"incidentId\" : \"incident123\"}," +
-                "\"body\" : {" +
+        String json = "{" +
                 "\"status\" : \"error\"," +
                 "\"responder\" : {" +
                 "\"id\" : \"responderId\"," +
@@ -152,13 +141,20 @@ public class ResponderUpdatedEventMessageListenerTest {
                 "\"boatCapacity\" : 2," +
                 "\"medicalKit\" : true," +
                 "\"available\" : false" +
-                "}" + "}" + "}";
+                "}" + "}";
+
+        CloudEvent event = CloudEventBuilder.v1()
+                .withId("000")
+                .withType("ResponderUpdatedEvent")
+                .withSource(URI.create("http://example.com"))
+                .withDataContentType("application/json")
+                .withData(json.getBytes())
+                .withExtension("incidentid", "incident123")
+                .build();
 
         when(processService.getProcessInstance(any(CorrelationKey.class))).thenReturn(processInstance);
-        when(queryService.query(anyString(), any(QueryResultMapper.class), any(QueryContext.class), any(QueryParam.class)))
-                .thenReturn(Collections.singletonList("ResponderAvailable"));
 
-        messageListener.processMessage(json, "responderId", "test-topic", 1, ack);
+        messageListener.processMessage(event, "responderId", "test-topic", 1, ack);
 
         verify(processService).signalProcessInstance(100L, "ResponderAvailable", false);
         verify(processService).getProcessInstance(correlationKeyCaptor.capture());
@@ -169,13 +165,8 @@ public class ResponderUpdatedEventMessageListenerTest {
     }
 
     @Test
-    public void testProcessMessageWhenNoHeader() {
-        String json = "{" + "\"messageType\" : \"ResponderUpdatedEvent\"," +
-                "\"id\":\"messageId\"," +
-                "\"invokingService\":\"messageSender\"," +
-                "\"timestamp\":1521148332397," +
-                "\"header\" : {\"wrongHeader\" : \"incident123\"}," +
-                "\"body\" : {" +
+    public void testProcessMessageWhenNoIncidentIdExtension() {
+        String json = "{" +
                 "\"status\" : \"error\"," +
                 "\"responder\" : {" +
                 "\"id\" : \"responderId\"," +
@@ -186,9 +177,17 @@ public class ResponderUpdatedEventMessageListenerTest {
                 "\"boatCapacity\" : 2," +
                 "\"medicalKit\" : true," +
                 "\"available\" : false" +
-                "}" + "}" + "}";
+                "}" + "}";
 
-        messageListener.processMessage(json, "responderId", "test-topic", 1, ack);
+        CloudEvent event = CloudEventBuilder.v1()
+                .withId("000")
+                .withType("ResponderUpdatedEvent")
+                .withSource(URI.create("http://example.com"))
+                .withDataContentType("application/json")
+                .withData(json.getBytes())
+                .build();
+
+        messageListener.processMessage(event, "responderId", "test-topic", 1, ack);
 
         verify(processService, never()).signalProcessInstance(any(), any(), any());
         verify(processService, never()).getProcessInstance(any(CorrelationKey.class));
@@ -198,12 +197,7 @@ public class ResponderUpdatedEventMessageListenerTest {
 
     @Test
     public void testProcessMessageWrongMessageType() {
-        String json = "{" + "\"messageType\" : \"WrongMessageType\"," +
-                "\"id\":\"messageId\"," +
-                "\"invokingService\":\"messageSender\"," +
-                "\"timestamp\":1521148332397," +
-                "\"header\" : {\"incidentId\" : \"incident123\"}," +
-                "\"body\" : {" +
+        String json = "{" +
                 "\"status\" : \"success\"," +
                 "\"responder\" : {" +
                 "\"id\" : \"responderId\"," +
@@ -214,9 +208,18 @@ public class ResponderUpdatedEventMessageListenerTest {
                 "\"boatCapacity\" : 2," +
                 "\"medicalKit\" : true," +
                 "\"available\" : false" +
-                "}" + "}" + "}";
+                "}" + "}";
 
-        messageListener.processMessage(json, "responderId", "test-topic", 1, ack);
+        CloudEvent event = CloudEventBuilder.v1()
+                .withId("000")
+                .withType("WrongMessageType")
+                .withSource(URI.create("http://example.com"))
+                .withDataContentType("application/json")
+                .withData(json.getBytes())
+                .withExtension("incidentid", "incident123")
+                .build();
+
+        messageListener.processMessage(event, "responderId", "test-topic", 1, ack);
 
         verify(processService, never()).signalProcessInstance(any(), any(), any());
         verify(processService, never()).getProcessInstance(any(CorrelationKey.class));
@@ -225,12 +228,19 @@ public class ResponderUpdatedEventMessageListenerTest {
     }
 
     @Test
-    public void testProcessMessageWrongMessageStructure() {
-        String json = "{" + "\"field1\" : \"value1\"," +
-                "\"field2\":\"calue2\"" +
-                "}";
+    public void testProcessMessageWrongDataContentType() {
+        byte[] bytes = {1,2,3};
 
-        messageListener.processMessage(json, "responderId", "test-topic", 1, ack);
+        CloudEvent event = CloudEventBuilder.v1()
+                .withId("000")
+                .withType("ResponderUpdatedEvent")
+                .withSource(URI.create("http://example.com"))
+                .withDataContentType("application/binary")
+                .withData(bytes)
+                .withExtension("incidentid", "incident123")
+                .build();
+
+        messageListener.processMessage(event, "responderId", "test-topic", 1, ack);
 
         verify(processService, never()).signalProcessInstance(any(), any(), any());
         verify(processService, never()).getProcessInstance(any(CorrelationKey.class));
@@ -238,7 +248,46 @@ public class ResponderUpdatedEventMessageListenerTest {
         verify(ack).acknowledge();
     }
 
+    @Test
+    public void testProcessMessageNoData() {
 
+        CloudEvent event = CloudEventBuilder.v1()
+                .withId("000")
+                .withType("ResponderUpdatedEvent")
+                .withSource(URI.create("http://example.com"))
+                .withDataContentType("application/binary")
+                .withExtension("incidentid", "incident123")
+                .build();
 
+        messageListener.processMessage(event, "responderId", "test-topic", 1, ack);
+
+        verify(processService, never()).signalProcessInstance(any(), any(), any());
+        verify(processService, never()).getProcessInstance(any(CorrelationKey.class));
+
+        verify(ack).acknowledge();
+    }
+
+    @Test
+    public void testProcessMessageNotAnResponderUpdatedEvent() {
+
+        String json = "{" + "\"field1\": \"value1\"," +
+                "\"field2\": \"value2\"" + "}";
+
+        CloudEvent event = CloudEventBuilder.v1()
+                .withId("000")
+                .withType("ResponderUpdatedEvent")
+                .withSource(URI.create("http://example.com"))
+                .withDataContentType("application/json")
+                .withData(json.getBytes())
+                .withExtension("incidentid", "incident123")
+                .build();
+
+        messageListener.processMessage(event, "responderId", "test-topic", 1, ack);
+
+        verify(processService, never()).signalProcessInstance(any(), any(), any());
+        verify(processService, never()).getProcessInstance(any(CorrelationKey.class));
+
+        verify(ack).acknowledge();
+    }
 
 }
