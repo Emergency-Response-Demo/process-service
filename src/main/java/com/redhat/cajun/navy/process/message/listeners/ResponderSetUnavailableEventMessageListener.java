@@ -4,7 +4,7 @@ import java.io.IOException;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.redhat.cajun.navy.process.message.model.ResponderUpdatedEvent;
+import com.redhat.cajun.navy.process.message.model.ResponderSetUnavailableEvent;
 import io.cloudevents.CloudEvent;
 import org.jbpm.services.api.ProcessService;
 import org.kie.api.runtime.process.ProcessInstance;
@@ -25,11 +25,11 @@ import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionTemplate;
 
 @Component
-public class ResponderUpdatedEventMessageListener {
+public class ResponderSetUnavailableEventMessageListener {
 
-    private static final Logger log = LoggerFactory.getLogger(ResponderUpdatedEventMessageListener.class);
+    private static final Logger log = LoggerFactory.getLogger(ResponderSetUnavailableEventMessageListener.class);
 
-    private final static String TYPE_RESPONDER_UPDATED_EVENT = "ResponderUpdatedEvent";
+    private final static String TYPE_RESPONDER_SET_UNAVAILABLE_EVENT = "ResponderSetUnavailableEvent";
 
     private static final String SIGNAL_RESPONDER_AVAILABLE = "ResponderAvailable";
 
@@ -51,7 +51,7 @@ public class ResponderUpdatedEventMessageListener {
             return;
         }
 
-        log.debug("Processing '" + TYPE_RESPONDER_UPDATED_EVENT + "' CloudEvent for responder '" + key + "' from topic:partition '" + topic + ":" + partition + "'");
+        log.debug("Processing '" + TYPE_RESPONDER_SET_UNAVAILABLE_EVENT + "' CloudEvent for responder '" + key + "' from topic:partition '" + topic + ":" + partition + "'");
 
         String incidentId = (String) cloudEvent.getExtension("incidentid");
         if (incidentId == null || incidentId.isEmpty()) {
@@ -61,7 +61,7 @@ public class ResponderUpdatedEventMessageListener {
         }
 
         try {
-            ResponderUpdatedEvent message = new ObjectMapper().readValue(cloudEvent.getData().toBytes(), new TypeReference<ResponderUpdatedEvent>() {});
+            ResponderSetUnavailableEvent message = new ObjectMapper().readValue(cloudEvent.getData().toBytes(), new TypeReference<ResponderSetUnavailableEvent>() {});
         } catch (IOException e) {
             log.error("CloudEvent data cannot be unmarshalled to ResponderUpdatedEvent object. Message is ignored.");
             ack.acknowledge();
@@ -70,7 +70,7 @@ public class ResponderUpdatedEventMessageListener {
 
         try {
 
-            ResponderUpdatedEvent message = new ObjectMapper().readValue(cloudEvent.getData().toBytes(), new TypeReference<ResponderUpdatedEvent>() {});
+            ResponderSetUnavailableEvent message = new ObjectMapper().readValue(cloudEvent.getData().toBytes(), new TypeReference<ResponderSetUnavailableEvent>() {});
 
             CorrelationKey correlationKey = correlationKeyFactory.newCorrelationKey(incidentId);
 
@@ -100,7 +100,7 @@ public class ResponderUpdatedEventMessageListener {
             return false;
         }
         String messageType = cloudEvent.getType();
-        if (!(TYPE_RESPONDER_UPDATED_EVENT.equalsIgnoreCase(messageType) )) {
+        if (!(TYPE_RESPONDER_SET_UNAVAILABLE_EVENT.equalsIgnoreCase(messageType) )) {
             log.debug("Message with type '" + messageType + "' is ignored");
             return false;
         }

@@ -25,8 +25,6 @@ public class UpdateResponderCommandBuilder {
         CloudEvent cloudEvent = new CloudEventBuilder<UpdateResponderCommand>()
                 .withType(messageType)
                 .withData(command)
-                .withExtension("aggregatetype", "responder-command")
-                .withExtension("aggregateid", mission.getResponderId())
                 .build();
         return new ImmutablePair<>(mission.getResponderId(), cloudEvent);
     }

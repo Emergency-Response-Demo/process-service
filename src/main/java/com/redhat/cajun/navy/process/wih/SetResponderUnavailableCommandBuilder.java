@@ -4,7 +4,7 @@ import java.util.Map;
 
 import com.redhat.cajun.navy.process.message.model.CloudEventBuilder;
 import com.redhat.cajun.navy.process.message.model.Responder;
-import com.redhat.cajun.navy.process.message.model.UpdateResponderCommand;
+import com.redhat.cajun.navy.process.message.model.SetResponderUnavailableCommand;
 import com.redhat.cajun.navy.rules.model.Mission;
 import io.cloudevents.CloudEvent;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -20,8 +20,8 @@ public class SetResponderUnavailableCommandBuilder {
         }
         Mission mission = (Mission) payload;
         Responder responder = new Responder.Builder(mission.getResponderId()).available(false).build();
-        UpdateResponderCommand command = new UpdateResponderCommand.Builder(responder).build();
-        CloudEvent cloudEvent = new CloudEventBuilder<UpdateResponderCommand>()
+        SetResponderUnavailableCommand command = new SetResponderUnavailableCommand.Builder(responder).build();
+        CloudEvent cloudEvent = new CloudEventBuilder<SetResponderUnavailableCommand>()
                 .withType(messageType)
                 .withData(command)
                 .withExtension("incidentid", mission.getIncidentId())
