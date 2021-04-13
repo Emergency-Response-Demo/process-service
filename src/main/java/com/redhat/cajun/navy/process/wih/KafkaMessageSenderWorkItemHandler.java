@@ -40,6 +40,9 @@ public class KafkaMessageSenderWorkItemHandler implements WorkItemHandler {
     @Value("${sender.destination.update-responder-command}")
     private String updateResponderCommandDestination;
 
+    @Value("${sender.destination.set-responder-unavailable-command}")
+    private String setResponderUnavailableCommandDestination;
+
     @Value("${sender.destination.update-incident-command}")
     private String updateIncidentCommandDestination;
 
@@ -72,7 +75,7 @@ public class KafkaMessageSenderWorkItemHandler implements WorkItemHandler {
     }
 
     private void send(String destination, String key, CloudEvent cloudEvent) {
-        if (updateResponderCommandDestination.equals(destination)) {
+        if (cloudEvent.getType().equals("SetResponderUnavailableCommand")) {
             outboxEventEmmitter.emitCloudEvent(cloudEvent);
         } else {
             ListenableFuture<SendResult<String, CloudEvent>> future = kafkaTemplate.send(destination, key, cloudEvent);
@@ -92,7 +95,7 @@ public class KafkaMessageSenderWorkItemHandler implements WorkItemHandler {
     public void init() {
         addPayloadBuilder("CreateMission", "CreateMissionCommand", createMissionCommandDestination,
                 CreateMissionCommandBuilder::builder);
-        addPayloadBuilder("SetResponderUnavailable", "UpdateResponderCommand", updateResponderCommandDestination,
+        addPayloadBuilder("SetResponderUnavailable", "SetResponderUnavailableCommand", setResponderUnavailableCommandDestination,
                 SetResponderUnavailableCommandBuilder::builder);
         addPayloadBuilder("UpdateIncident", "UpdateIncidentCommand", updateIncidentCommandDestination,
                 UpdateIncidentCommandBuilder::builder);

@@ -23,6 +23,7 @@ import com.redhat.cajun.navy.process.message.model.CloudEventBuilder;
 import com.redhat.cajun.navy.process.message.model.CreateMissionCommand;
 import com.redhat.cajun.navy.process.message.model.IncidentAssignmentEvent;
 import com.redhat.cajun.navy.process.message.model.Responder;
+import com.redhat.cajun.navy.process.message.model.SetResponderUnavailableCommand;
 import com.redhat.cajun.navy.process.message.model.UpdateIncidentCommand;
 import com.redhat.cajun.navy.process.message.model.UpdateResponderCommand;
 import com.redhat.cajun.navy.process.outbox.OutboxEventEmitter;
@@ -70,6 +71,7 @@ public class KafkaMessageSenderWorkItemHandlerTest {
         setField(wih, null, kafkaTemplate, KafkaTemplate.class);
         setField(wih, "createMissionCommandDestination", "topic-mission-command", String.class);
         setField(wih, "updateResponderCommandDestination", "topic-responder-command", String.class);
+        setField(wih, "setResponderUnavailableCommandDestination", "topic-responder-command", String.class);
         setField(wih, "updateIncidentCommandDestination", "topic-incident-command", String.class);
         setField(wih, "incidentAssignmentEventDestination", "topic-incident-event", String.class);
         setField(wih, null, outboxEventEmitter, OutboxEventEmitter.class);
@@ -162,7 +164,7 @@ public class KafkaMessageSenderWorkItemHandlerTest {
         verify(outboxEventEmitter).emitCloudEvent(cloudEventCaptor.capture());
 
         CloudEvent cloudEvent = cloudEventCaptor.getValue();
-        assertThat(cloudEvent.getType(), equalTo("UpdateResponderCommand"));
+        assertThat(cloudEvent.getType(), equalTo("SetResponderUnavailableCommand"));
         assertThat(cloudEvent.getSource().toString(), equalTo("emergency-response/process-service"));
         assertThat(cloudEvent.getSpecVersion().toString(), equalTo("1.0"));
         assertThat(cloudEvent.getTime(), notNullValue());
@@ -172,8 +174,8 @@ public class KafkaMessageSenderWorkItemHandlerTest {
         assertThat(cloudEvent.getExtension("aggregatetype"), equalTo("responder-command"));
         assertThat(cloudEvent.getExtension("aggregateid"), equalTo("responder123"));
         assertThat(cloudEvent.getData(), is(instanceOf(PojoCloudEventData.class)));
-        PojoCloudEventData<UpdateResponderCommand> cloudEventData = (PojoCloudEventData<UpdateResponderCommand>) cloudEvent.getData();
-        UpdateResponderCommand command = cloudEventData.getValue();
+        PojoCloudEventData<SetResponderUnavailableCommand> cloudEventData = (PojoCloudEventData<SetResponderUnavailableCommand>) cloudEvent.getData();
+        SetResponderUnavailableCommand command = cloudEventData.getValue();
         assertThat(command, notNullValue());
         Responder responder = command.getResponder();
         assertThat(responder, notNullValue());
@@ -396,20 +398,22 @@ public class KafkaMessageSenderWorkItemHandlerTest {
         when(workItem.getParameters()).thenReturn(parameters);
         when(workItem.getId()).thenReturn(1L);
 
+        when(kafkaTemplate.send(any(String.class), any(String.class), any(CloudEvent.class))).thenReturn(new SettableListenableFuture<>());
+
         wih.executeWorkItem(workItem, workItemManager);
         verify(workItemManager).completeWorkItem(eq(1L), anyMap());
-        verify(outboxEventEmitter).emitCloudEvent(cloudEventCaptor.capture());
+        verify(kafkaTemplate).send(eq("topic-responder-command"), eq("responder123"), cloudEventCaptor.capture());
 
         CloudEvent cloudEvent = cloudEventCaptor.getValue();
         assertThat(cloudEvent.getType(), equalTo("UpdateResponderCommand"));
         assertThat(cloudEvent.getSource().toString(), equalTo("emergency-response/process-service"));
         assertThat(cloudEvent.getSpecVersion().toString(), equalTo("1.0"));
         assertThat(cloudEvent.getTime(), notNullValue());
-        assertThat(cloudEvent.getExtensionNames().size(), equalTo(2));
+        assertThat(cloudEvent.getExtensionNames().size(), equalTo(0));
         assertThat(cloudEvent.getData(), notNullValue());
         assertThat(cloudEvent.getExtension("incidentid"), nullValue());
-        assertThat(cloudEvent.getExtension("aggregatetype"), equalTo("responder-command"));
-        assertThat(cloudEvent.getExtension("aggregateid"), equalTo("responder123"));
+        assertThat(cloudEvent.getExtension("aggregatetype"), nullValue());
+        assertThat(cloudEvent.getExtension("aggregateid"), nullValue());
         assertThat(cloudEvent.getData(), is(instanceOf(PojoCloudEventData.class)));
         PojoCloudEventData<UpdateResponderCommand> cloudEventData = (PojoCloudEventData<UpdateResponderCommand>) cloudEvent.getData();
         UpdateResponderCommand command = cloudEventData.getValue();
