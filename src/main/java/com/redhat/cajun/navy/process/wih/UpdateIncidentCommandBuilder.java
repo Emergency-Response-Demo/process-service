@@ -6,12 +6,11 @@ import com.redhat.cajun.navy.process.message.model.CloudEventBuilder;
 import com.redhat.cajun.navy.process.message.model.Incident;
 import com.redhat.cajun.navy.process.message.model.UpdateIncidentCommand;
 import io.cloudevents.CloudEvent;
-import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
 public class UpdateIncidentCommandBuilder {
 
-    public static Pair<String, CloudEvent> builder(String messageType, Map<String, Object> parameters) {
+    public static CloudEvent builder(Pair<String, String> messageTypeAndDestination, Map<String, Object> parameters) {
 
         Object payload = parameters.get("Payload");
         if (!(payload instanceof com.redhat.cajun.navy.rules.model.Incident)) {
@@ -21,11 +20,12 @@ public class UpdateIncidentCommandBuilder {
         UpdateIncidentCommand command = new UpdateIncidentCommand.Builder(
                 new Incident.Builder(incident.getId(), status(incident.getStatus())).build())
                 .build();
-        CloudEvent cloudEvent = new CloudEventBuilder<UpdateIncidentCommand>()
-                .withType(messageType)
+        return new CloudEventBuilder<UpdateIncidentCommand>()
+                .withType(messageTypeAndDestination.getLeft())
                 .withData(command)
+                .withExtension("aggregatetype", messageTypeAndDestination.getRight())
+                .withExtension("aggregateid", incident.getId())
                 .build();
-        return new ImmutablePair<>(incident.getId(),cloudEvent);
     }
 
     private static com.redhat.cajun.navy.process.message.model.Incident.IncidentStatus status(String status) {
@@ -44,6 +44,4 @@ public class UpdateIncidentCommandBuilder {
 
         }
     }
-
-
 }
