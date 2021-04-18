@@ -7,12 +7,11 @@ import com.redhat.cajun.navy.process.message.model.Responder;
 import com.redhat.cajun.navy.process.message.model.SetResponderUnavailableCommand;
 import com.redhat.cajun.navy.rules.model.Mission;
 import io.cloudevents.CloudEvent;
-import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
 public class SetResponderUnavailableCommandBuilder {
 
-    public static Pair<String, CloudEvent> builder(String messageType, Map<String, Object> parameters) {
+    public static CloudEvent builder(Pair<String, String> messageTypeAndDestination, Map<String, Object> parameters) {
 
         Object payload = parameters.get("Payload");
         if (!(payload instanceof Mission)) {
@@ -21,14 +20,13 @@ public class SetResponderUnavailableCommandBuilder {
         Mission mission = (Mission) payload;
         Responder responder = new Responder.Builder(mission.getResponderId()).available(false).build();
         SetResponderUnavailableCommand command = new SetResponderUnavailableCommand.Builder(responder).build();
-        CloudEvent cloudEvent = new CloudEventBuilder<SetResponderUnavailableCommand>()
-                .withType(messageType)
+
+        return new CloudEventBuilder<SetResponderUnavailableCommand>()
+                .withType(messageTypeAndDestination.getLeft())
                 .withData(command)
                 .withExtension("incidentid", mission.getIncidentId())
-                .withExtension("aggregatetype", "responder-command")
+                .withExtension("aggregatetype", messageTypeAndDestination.getRight())
                 .withExtension("aggregateid", mission.getResponderId())
                 .build();
-
-        return new ImmutablePair<>(mission.getResponderId(), cloudEvent);
     }
 }
