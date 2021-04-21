@@ -25,7 +25,7 @@ import org.springframework.kafka.support.Acknowledgment;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionStatus;
 
-public class ResponderUpdatedEventMessageListenerTest {
+public class ResponderSetUnavailableEventMessageListenerTest {
 
     @Mock
     private PlatformTransactionManager ptm;
@@ -45,12 +45,12 @@ public class ResponderUpdatedEventMessageListenerTest {
     @Captor
     private ArgumentCaptor<CorrelationKey> correlationKeyCaptor;
 
-    private ResponderUpdatedEventMessageListener messageListener;
+    private ResponderSetUnavailableEventMessageListener messageListener;
 
     @Before
     public void init() {
         initMocks(this);
-        messageListener = new ResponderUpdatedEventMessageListener();
+        messageListener = new ResponderSetUnavailableEventMessageListener();
         setField(messageListener, null, ptm, PlatformTransactionManager.class);
         setField(messageListener, null, processService, ProcessService.class);
         when(ptm.getTransaction(any())).thenReturn(transactionStatus);
@@ -74,7 +74,7 @@ public class ResponderUpdatedEventMessageListenerTest {
 
         CloudEvent event = CloudEventBuilder.v1()
                 .withId("000")
-                .withType("ResponderUpdatedEvent")
+                .withType("ResponderSetUnavailableEvent")
                 .withSource(URI.create("http://example.com"))
                 .withDataContentType("application/json")
                 .withData(json.getBytes())
@@ -110,7 +110,7 @@ public class ResponderUpdatedEventMessageListenerTest {
 
         CloudEvent event = CloudEventBuilder.v1()
                 .withId("000")
-                .withType("ResponderUpdatedEvent")
+                .withType("ResponderSetUnavailableEvent")
                 .withSource(URI.create("http://example.com"))
                 .withDataContentType("application/json")
                 .withData(json.getBytes())
@@ -145,7 +145,7 @@ public class ResponderUpdatedEventMessageListenerTest {
 
         CloudEvent event = CloudEventBuilder.v1()
                 .withId("000")
-                .withType("ResponderUpdatedEvent")
+                .withType("ResponderSetUnavailableEvent")
                 .withSource(URI.create("http://example.com"))
                 .withDataContentType("application/json")
                 .withData(json.getBytes())
@@ -181,7 +181,7 @@ public class ResponderUpdatedEventMessageListenerTest {
 
         CloudEvent event = CloudEventBuilder.v1()
                 .withId("000")
-                .withType("ResponderUpdatedEvent")
+                .withType("ResponderSetUnavailableEvent")
                 .withSource(URI.create("http://example.com"))
                 .withDataContentType("application/json")
                 .withData(json.getBytes())
@@ -233,7 +233,7 @@ public class ResponderUpdatedEventMessageListenerTest {
 
         CloudEvent event = CloudEventBuilder.v1()
                 .withId("000")
-                .withType("ResponderUpdatedEvent")
+                .withType("ResponderSetUnavailableEvent")
                 .withSource(URI.create("http://example.com"))
                 .withDataContentType("application/binary")
                 .withData(bytes)
@@ -253,7 +253,7 @@ public class ResponderUpdatedEventMessageListenerTest {
 
         CloudEvent event = CloudEventBuilder.v1()
                 .withId("000")
-                .withType("ResponderUpdatedEvent")
+                .withType("ResponderSetUnavailableEvent")
                 .withSource(URI.create("http://example.com"))
                 .withDataContentType("application/binary")
                 .withExtension("incidentid", "incident123")
@@ -275,7 +275,7 @@ public class ResponderUpdatedEventMessageListenerTest {
 
         CloudEvent event = CloudEventBuilder.v1()
                 .withId("000")
-                .withType("ResponderUpdatedEvent")
+                .withType("ResponderSetUnavailableEvent")
                 .withSource(URI.create("http://example.com"))
                 .withDataContentType("application/json")
                 .withData(json.getBytes())

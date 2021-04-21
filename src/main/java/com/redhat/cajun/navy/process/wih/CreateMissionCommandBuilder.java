@@ -6,12 +6,11 @@ import com.redhat.cajun.navy.process.message.model.CloudEventBuilder;
 import com.redhat.cajun.navy.process.message.model.CreateMissionCommand;
 import com.redhat.cajun.navy.rules.model.Mission;
 import io.cloudevents.CloudEvent;
-import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 
 public class CreateMissionCommandBuilder {
 
-    public static Pair<String, CloudEvent> builder(String messageType, Map<String, Object> parameters) {
+    public static CloudEvent builder(Pair<String, String> messageTypeAndDestination, Map<String, Object> parameters) {
 
         Object payload = parameters.get("Payload");
         if (!(payload instanceof Mission)) {
@@ -33,11 +32,12 @@ public class CreateMissionCommandBuilder {
                 .destinationLong(mission.getDestinationLong())
                 .processId((String)processId)
                 .build();
-        CloudEvent cloudEvent = new CloudEventBuilder<CreateMissionCommand>()
-                .withType(messageType)
+        return new CloudEventBuilder<CreateMissionCommand>()
+                .withType(messageTypeAndDestination.getLeft())
                 .withData(command)
+                .withExtension("aggregatetype", messageTypeAndDestination.getRight())
+                .withExtension("aggregateid", mission.getIncidentId())
                 .build();
-        return new ImmutablePair<>(mission.getIncidentId(), cloudEvent);
     }
 
 }

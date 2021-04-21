@@ -1,6 +1,6 @@
 package com.redhat.cajun.navy.process.message.model;
 
-public class ResponderUpdatedEvent {
+public class ResponderSetUnavailableEvent {
 
     private String status;
 
